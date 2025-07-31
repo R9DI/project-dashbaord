@@ -1,6 +1,6 @@
 import React from "react";
-import IssueModal from "./components/IssueModal";
-import Dashboard from "./components/Dashboard";
+import IssueModal from "./components/IssueModal.jsx";
+import Dashboard from "./components/Dashboard.jsx";
 import "./App.css";
 
 function App() {

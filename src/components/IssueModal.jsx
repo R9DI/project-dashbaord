@@ -13,7 +13,7 @@ import {
   Select,
   Drawer,
 } from "antd";
-import GanttChart from "./GanttChart";
+import GanttChart from "./GanttChart.jsx";
 import { AgGridReact } from "ag-grid-react";
 import { UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
