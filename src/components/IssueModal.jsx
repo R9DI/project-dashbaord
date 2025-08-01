@@ -45,6 +45,11 @@ const IssueModal = ({ isVisible, onClose, data }) => {
   ];
   const [isModalVisible, setIsModalVisible] = useState(isVisible);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [issueContent, setIssueContent] = useState("");
+  const [summaryContent, setSummaryContent] = useState("");
+  const [currentStatus, setCurrentStatus] = useState("pending");
+  const drawerRef = useRef(null);
 
   // props 변경 감지
   useEffect(() => {
@@ -57,11 +62,30 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     if (onClose) onClose();
   };
 
+  // 드로워에서 데이터 저장 함수
+  const saveDrawerData = (localData) => {
+    if (selectedRow && localData) {
+      setRowData((prevData) =>
+        prevData.map((row) =>
+          row.id === selectedRow.id
+            ? {
+                ...row,
+                detail: localData.issueContent,
+                summary: localData.summaryContent,
+                status: localData.currentStatus,
+              }
+            : row
+        )
+      );
+    }
+  };
+
   const initialData = [
     {
       id: 1,
-      category: "개발",
       issue: "로그인 기능 오류",
+      summary: "로그인 시 500 에러 발생",
+      status: "in-progress",
       img: "https://dummyimage.com/800x300/4A90E2/FFFFFF.png&text=Login+Error", // 가로가 매우 긴 이미지
       detail: "500 에러 발생\n데이터베이스 연결 문제\n인증 시스템 불안정",
       start: "2025-06-01",
@@ -72,8 +96,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     },
     {
       id: 2,
-      category: "디자인",
       issue: "UI 반응형 개선",
+      summary: "모바일 메뉴 표시 문제",
+      status: "pending",
       img: "https://dummyimage.com/300x800/50C878/FFFFFF.png&text=UI+Design", // 세로가 매우 긴 이미지
       detail: "모바일 메뉴 표시 오류\nCSS 미디어 쿼리 수정\n일관된 UI 제공",
       start: "2025-06-03",
@@ -84,8 +109,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     },
     {
       id: 3,
-      category: "테스트",
       issue: "성능 테스트 필요",
+      summary: "대용량 데이터 처리 속도 저하",
+      status: "blocked",
       img: "https://dummyimage.com/100x100/FF6B6B/FFFFFF.png&text=Test", // 정사각형 이미지
       detail: "대용량 데이터 처리 속도 저하\n쿼리 최적화 필요\n캐싱 전략 검토",
       start: "2025-06-05",
@@ -96,8 +122,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     },
     {
       id: 4,
-      category: "보안",
       issue: "XSS 취약점 패치",
+      summary: "XSS 공격 취약점 발견",
+      status: "completed",
       img: "https://dummyimage.com/400x600/FF8C00/FFFFFF.png&text=Security", // 세로가 긴 이미지
       detail: "XSS 공격 취약점\n입력값 검증 강화\nHTML 인코딩 적용",
       start: "2025-06-10",
@@ -108,8 +135,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     },
     {
       id: 5,
-      category: "인프라",
       issue: "서버 확장성 개선",
+      summary: "서버 부하 문제 해결",
+      status: "in-progress",
       img: "https://dummyimage.com/600x200/9B59B6/FFFFFF.png&text=Infrastructure", // 가로가 긴 이미지
       detail: "서버 부하 문제\n로드 밸런서 도입\nCDN 검토",
       start: "2025-06-12",
@@ -120,8 +148,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     },
     {
       id: 6,
-      category: "사용자 경험",
       issue: "페이지 로딩 속도 개선",
+      summary: "페이지 로딩 3초 초과 문제",
+      status: "pending",
       img: "https://dummyimage.com/200x400/3498DB/FFFFFF.png&text=UX+Speed", // 세로가 긴 이미지
       detail: "페이지 로딩 3초 초과\n이미지 최적화\n웹팩 설정 최적화",
       start: "2025-07-01",
@@ -148,7 +177,6 @@ const IssueModal = ({ isVisible, onClose, data }) => {
 
   const [rowData, setRowData] = useState(sortedData);
   const [originalData] = useState(sortedData); // 원본 데이터 보존
-  const [selectedRow, setSelectedRow] = useState(null); // 선택된 행 데이터
 
   // 현재 월에 진행 중인지 확인하는 함수
   const isCurrentMonthActive = (item) => {
@@ -194,14 +222,24 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     if (onClose) onClose();
   };
 
+  // 드로워 열기
   const showDrawer = () => {
     setIsDrawerVisible(true);
   };
 
+  // 드로워 닫기
   const closeDrawer = () => {
     setIsDrawerVisible(false);
-    setSelectedRow(null);
   };
+
+  // 선택된 행이 변경될 때 상태 업데이트
+  useEffect(() => {
+    if (selectedRow) {
+      setIssueContent(selectedRow.detail || "");
+      setSummaryContent(selectedRow.summary || "");
+      setCurrentStatus(selectedRow.status || "pending");
+    }
+  }, [selectedRow]);
 
   const addNewIssue = () => {
     const newId = Math.max(...rowData.map((row) => row.id), 0) + 1;
@@ -210,8 +248,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
 
     const newIssue = {
       id: newId,
-      category: "새 카테고리",
       issue: "새 이슈",
+      summary: "",
+      status: "pending",
       img: "", // 이미지 없음으로 시작
       detail: "새 이슈에 대한 상세 내용을 입력하세요.",
       start: today,
@@ -463,95 +502,48 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     );
   };
 
-  // Start Date 셀 렌더러
+  // Start Date 셀 렌더러 (읽기 전용)
   const StartDateCell = (props) => {
     const currentRow = props.data;
     const startDate = currentRow?.start || "";
-    const rowId = currentRow?.id;
-
-    const handleStartChange = (date, dateString) => {
-      setRowData((prevData) =>
-        prevData.map((row) =>
-          row.id === rowId ? { ...row, start: dateString } : { ...row }
-        )
-      );
-    };
 
     return (
-      <DatePicker
-        size="small"
-        value={startDate && startDate !== "" ? dayjs(startDate) : null}
-        onChange={handleStartChange}
-        format="YYYY-MM-DD"
-        style={{ width: "100%" }}
-        placeholder="시작일"
-      />
+      <div
+        style={{
+          padding: "4px 8px",
+          fontSize: "12px",
+          color: startDate ? "#333" : "#999",
+          fontStyle: startDate ? "normal" : "italic",
+        }}
+      >
+        {startDate || "미정"}
+      </div>
     );
   };
 
-  // End Date 셀 렌더러
+  // End Date 셀 렌더러 (읽기 전용)
   const EndDateCell = (props) => {
     const currentRow = props.data;
     const endDate = currentRow?.end || "";
-    const rowId = currentRow?.id;
-
-    const handleEndChange = (date, dateString) => {
-      setRowData((prevData) =>
-        prevData.map((row) =>
-          row.id === rowId ? { ...row, end: dateString } : { ...row }
-        )
-      );
-    };
 
     return (
-      <DatePicker
-        size="small"
-        value={endDate && endDate !== "" ? dayjs(endDate) : null}
-        onChange={handleEndChange}
-        format="YYYY-MM-DD"
-        style={{ width: "100%" }}
-        placeholder="종료일"
-        allowClear={true}
-      />
+      <div
+        style={{
+          padding: "4px 8px",
+          fontSize: "12px",
+          color: endDate ? "#333" : "#999",
+          fontStyle: endDate ? "normal" : "italic",
+        }}
+      >
+        {endDate || "미정"}
+      </div>
     );
   };
 
-  // Detail 컬럼 셀 렌더러 (간단한 버전)
+  // Detail 컬럼 셀 렌더러 (읽기 전용)
   const DetailCell = (props) => {
     const currentRow = props.data;
     const detail = currentRow?.detail || "";
-    const rowId = currentRow?.id;
-    const [isEditing, setIsEditing] = useState(false);
-    const [editValue, setEditValue] = useState(detail);
-
-    const handleDoubleClick = () => {
-      setIsEditing(true);
-      setEditValue(detail);
-    };
-
-    const handleSave = () => {
-      setRowData((prevData) =>
-        prevData.map((row) =>
-          row.id === rowId ? { ...row, detail: editValue } : { ...row }
-        )
-      );
-      setIsEditing(false);
-    };
-    const handleKeyDown = (e) => {
-      if (e.key === "Enter" && e.shiftKey) {
-        // Shift + Enter: 새 줄 추가 (기본 동작 허용)
-        return;
-      } else if (e.key === "Enter" && !e.shiftKey) {
-        // Enter만: 저장
-        e.preventDefault();
-        handleSave();
-      } else if (e.key === "Escape") {
-        // Escape: 취소
-        e.preventDefault();
-        setIsEditing(false);
-        setEditValue(detail);
-      }
-    };
 
     // 여러줄 텍스트를 말머리 부호로 변환
     const formatDetailText = (text) => {
@@ -564,228 +556,60 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       ));
     };
 
-    if (isEditing) {
-      return (
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            position: "absolute",
-            top: 0,
-            left: 0,
-            zIndex: 1000,
-          }}
-        >
-          <textarea
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onBlur={handleSave}
-            style={{
-              width: "100%",
-              height: "100%",
-              border: "1px solid #d9d9d9",
-              borderRadius: "4px",
-              padding: "8px",
-              resize: "none",
-              fontFamily: "inherit",
-              fontSize: "inherit",
-              lineHeight: "1.2",
-              boxSizing: "border-box",
-            }}
-            autoFocus
-          />
-        </div>
-      );
-    }
-
     return (
       <div
         style={{
-          width: "100%",
-          height: "100%",
-          minHeight: "100%",
-          cursor: "pointer",
-          textAlign: "left",
-          padding: "4px 0",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          justifyContent: "center",
-        }}
-        onDoubleClick={handleDoubleClick}
-      >
-        {formatDetailText(detail)}
-      </div>
-    );
-  };
-
-  // 진행사항 셀 렌더러
-  const ProgressCell = (props) => {
-    const progress = props.value || "";
-    const rowId = props.data.id;
-    const [isEditing, setIsEditing] = useState(false);
-    const [editValue, setEditValue] = useState(progress);
-
-    const handleDoubleClick = () => {
-      setIsEditing(true);
-      setEditValue(progress);
-    };
-
-    const handleSave = () => {
-      setRowData((prevData) =>
-        prevData.map((row) => {
-          if (row.id === rowId) {
-            return { ...row, progress: editValue };
-          }
-          return row;
-        })
-      );
-      setIsEditing(false);
-    };
-
-    const handleKeyDown = (e) => {
-      if (e.key === "Enter" && e.shiftKey) {
-        // Shift + Enter: 새 줄 추가 (기본 동작 허용)
-        return;
-      } else if (e.key === "Enter" && !e.shiftKey) {
-        // Enter만: 저장
-        e.preventDefault();
-        handleSave();
-      } else if (e.key === "Escape") {
-        // Escape: 취소
-        e.preventDefault();
-        setIsEditing(false);
-        setEditValue(progress);
-      }
-    };
-
-    if (isEditing) {
-      return (
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            position: "absolute",
-            top: 0,
-            left: 0,
-            zIndex: 1000,
-          }}
-        >
-          <textarea
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onBlur={handleSave}
-            style={{
-              width: "100%",
-              height: "100%",
-              border: "1px solid #d9d9d9",
-              borderRadius: "4px",
-              padding: "6px",
-              resize: "none",
-              fontFamily: "inherit",
-              fontSize: "12px",
-              lineHeight: "1.3",
-              boxSizing: "border-box",
-            }}
-            autoFocus
-            placeholder="진행사항을 입력하세요..."
-          />
-        </div>
-      );
-    }
-
-    return (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          minHeight: "100%",
-          cursor: "pointer",
-          padding: "4px 6px",
-          textAlign: "left",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          justifyContent: "center",
+          padding: "8px",
           fontSize: "12px",
-          lineHeight: "1.3",
-          whiteSpace: "pre-wrap",
-          wordBreak: "break-word",
-          color: progress ? "#333" : "#999",
+          lineHeight: "1.4",
+          color: detail ? "#333" : "#999",
+          fontStyle: detail ? "normal" : "italic",
+          maxHeight: "60px",
+          overflow: "hidden",
         }}
-        onDoubleClick={handleDoubleClick}
       >
-        {progress || "진행사항 입력..."}
+        {detail ? formatDetailText(detail) : "내용 없음"}
       </div>
     );
   };
 
-  // 파일 업로드/다운로드 셀 렌더러
-  const FileCell = (props) => {
-    const fileData = props.value;
-    const rowId = props.data.id;
-
-    const handleUpload = (info) => {
-      if (info.file.status === "done") {
-        message.success(
-          `${info.file.name} 파일이 성공적으로 업로드되었습니다.`
-        );
-
-        // 파일 정보를 데이터에 저장
-        setRowData((prevData) =>
-          prevData.map((row) =>
-            row.id === rowId
-              ? {
-                  ...row,
-                  file: info.file.name,
-                  fileUrl: info.file.response?.url,
-                }
-              : { ...row }
-          )
-        );
-      } else if (info.file.status === "error") {
-        message.error(`${info.file.name} 파일 업로드에 실패했습니다.`);
-      }
-    };
-
-    const uploadProps = {
-      name: "file",
-      action: "https://run.mocky.io/v3/435e224c-44fb-4773-9faf-380c5e6a2188", // 임시 업로드 URL
-      headers: {
-        authorization: "authorization-text",
-      },
-      onChange: handleUpload,
-      showUploadList: false,
-    };
+  // Progress 셀 렌더러 (읽기 전용)
+  const ProgressCell = (props) => {
+    const currentRow = props.data;
+    const progress = currentRow?.progress || "";
 
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        <Upload {...uploadProps}>
-          <Button
-            type="primary"
-            size="small"
-            icon={<UploadOutlined />}
-            style={{ fontSize: "12px" }}
-          >
-            업로드
-          </Button>
-        </Upload>
-        {fileData && (
-          <Button
-            type="link"
-            size="small"
-            onClick={() => {
-              // 파일 다운로드 로직
-              console.log("파일 다운로드:", fileData);
-              message.info(`${fileData} 파일을 다운로드합니다.`);
-            }}
-            style={{ fontSize: "12px", padding: "0 4px" }}
-          >
-            📄 {fileData}
-          </Button>
-        )}
+      <div
+        style={{
+          padding: "8px",
+          fontSize: "12px",
+          lineHeight: "1.4",
+          color: progress ? "#333" : "#999",
+          fontStyle: progress ? "normal" : "italic",
+          maxHeight: "60px",
+          overflow: "hidden",
+        }}
+      >
+        {progress || "진행사항 없음"}
+      </div>
+    );
+  };
+
+  // File 셀 렌더러 (읽기 전용)
+  const FileCell = (props) => {
+    const currentRow = props.data;
+    const file = currentRow?.file || "";
+
+    return (
+      <div
+        style={{
+          padding: "8px",
+          fontSize: "12px",
+          color: file ? "#333" : "#999",
+          fontStyle: file ? "normal" : "italic",
+        }}
+      >
+        {file || "파일 없음"}
       </div>
     );
   };
@@ -800,61 +624,161 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         color: "#1890ff",
         textAlign: "left",
         justifyContent: "flex-start",
-      },
-    },
-    {
-      field: "category",
-      headerName: "Category",
-      editable: true,
-      width: 120,
-      cellStyle: {
         fontWeight: "bold",
-        textAlign: "left",
-        justifyContent: "flex-start",
       },
     },
     {
       field: "img",
       headerName: "Image",
       editable: false,
-      minWidth: 200,
-      maxWidth: 250,
+      width: 120,
       cellRendererFramework: ImageCell,
+      cellStyle: { padding: "4px" },
+    },
+    {
+      field: "status",
+      headerName: "Status & Summary",
+      editable: false,
+      width: 200,
+      cellRenderer: (params) => {
+        const status = params.data.status || "pending";
+        const summary = params.data.summary || "";
+
+        const statusLabels = {
+          pending: "대기중",
+          "in-progress": "진행중",
+          completed: "완료",
+          blocked: "차단됨",
+        };
+        const statusLabel = statusLabels[status] || "대기중";
+
+        const statusColors = {
+          pending: "#faad14",
+          "in-progress": "#1890ff",
+          completed: "#52c41a",
+          blocked: "#ff4d4f",
+        };
+        const color = statusColors[status] || "#faad14";
+
+        const displayText = summary || "내용 없음";
+        const truncatedText =
+          displayText.length > 30
+            ? displayText.substring(0, 30) + "..."
+            : displayText;
+
+        return `
+          <div style="
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px;
+            width: 100%;
+          ">
+            <div style="
+              padding: 2px 6px;
+              border-radius: 8px;
+              font-size: 11px;
+              font-weight: bold;
+              background-color: ${color};
+              color: white;
+              text-align: center;
+              display: inline-block;
+              min-width: 50px;
+              flex-shrink: 0;
+            ">${statusLabel}</div>
+            <div style="
+              font-size: 11px;
+              color: #333;
+              line-height: 1.3;
+              flex: 1;
+            ">${truncatedText}</div>
+          </div>
+        `;
+      },
       cellStyle: {
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "0",
-        height: "100%",
-        minWidth: "200px",
-        overflow: "visible",
+        display: "flex !important",
+        alignItems: "center !important",
+        justifyContent: "flex-start !important",
+        padding: "4px !important",
+        height: "100% !important",
       },
     },
     {
       field: "detail",
-      headerName: "이슈",
+      headerName: "이슈 상세",
       editable: false,
       minWidth: 300,
       flex: 1,
-      cellRendererFramework: DetailCell,
+      cellRendererFramework: (params) => {
+        const detail = params.value || "";
+        if (!detail) {
+          return (
+            <div style={{ color: "#999", fontStyle: "italic", padding: "8px" }}>
+              내용 없음
+            </div>
+          );
+        }
+
+        // HTML 태그를 그대로 렌더링
+        const createMarkup = (htmlContent) => {
+          return { __html: htmlContent };
+        };
+
+        // 3줄로 제한하기 위해 임시 div 생성
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = detail;
+        const plainText = tempDiv.textContent || tempDiv.innerText || "";
+        const lines = plainText.split("\n");
+        const limitedLines = lines.slice(0, 3);
+        const displayText = limitedLines.join("\n");
+        const isTruncated = lines.length > 3;
+
+        return (
+          <div
+            style={{
+              padding: "8px",
+              fontSize: "12px",
+              lineHeight: "0.3",
+              color: "#333",
+              maxHeight: "60px",
+              overflow: "hidden",
+              textAlign: "left",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <div
+              dangerouslySetInnerHTML={createMarkup(detail)}
+              style={{
+                maxHeight: "60px",
+                overflow: "hidden",
+                lineHeight: "0.3",
+                textAlign: "left",
+              }}
+            />
+            {isTruncated && (
+              <div
+                style={{ color: "#666", fontSize: "11px", marginTop: "2px" }}
+              >
+                ...
+              </div>
+            )}
+          </div>
+        );
+      },
       cellStyle: {
         display: "flex",
-        flexDirection: "column",
         alignItems: "flex-start",
-        justifyContent: "center",
-        textAlign: "left",
-        padding: "8px",
+        justifyContent: "flex-start",
+        padding: "4px",
         height: "100%",
-        whiteSpace: "pre-wrap",
-        wordBreak: "break-word",
       },
     },
-
     {
       field: "start",
       headerName: "Start",
       editable: false,
-      minWidth: 120,
+      width: 120,
       cellRendererFramework: StartDateCell,
       cellStyle: { padding: "4px" },
     },
@@ -862,21 +786,40 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       field: "end",
       headerName: "End",
       editable: false,
-      minWidth: 120,
+      width: 120,
       cellRendererFramework: EndDateCell,
       cellStyle: { padding: "4px" },
-    },
-    {
-      field: "file",
-      headerName: "File",
-      editable: false,
-      minWidth: 150,
-      cellRendererFramework: FileCell,
     },
   ];
 
   // 선택된 행의 상세 정보 컴포넌트
-  const SelectedRowDetail = ({ rowData }) => {
+  const SelectedRowDetail = React.forwardRef(({ rowData }, ref) => {
+    const [localIssueContent, setLocalIssueContent] = useState(
+      rowData?.detail || ""
+    );
+    const [localSummaryContent, setLocalSummaryContent] = useState(
+      rowData?.summary || ""
+    );
+    const [localCurrentStatus, setLocalCurrentStatus] = useState(
+      rowData?.status || "pending"
+    );
+
+    // rowData가 변경될 때 로컬 상태 업데이트
+    useEffect(() => {
+      setLocalIssueContent(rowData?.detail || "");
+      setLocalSummaryContent(rowData?.summary || "");
+      setLocalCurrentStatus(rowData?.status || "pending");
+    }, [rowData]);
+
+    // ref를 통해 로컬 데이터를 외부로 전달
+    React.useImperativeHandle(ref, () => ({
+      getLocalData: () => ({
+        issueContent: localIssueContent,
+        summaryContent: localSummaryContent,
+        currentStatus: localCurrentStatus,
+      }),
+    }));
+
     if (!rowData) {
       return (
         <div
@@ -892,7 +835,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
             borderRadius: "8px",
           }}
         >
-          📋 이슈를 선택하면 상세 정보가 여기에 표시됩니다
+          📋 이슈를 선택하면 상세 정보를 편집할 수 있습니다
         </div>
       );
     }
@@ -908,20 +851,17 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           overflow: "auto",
         }}
       >
-        {/* 헤더 영역 - 한 줄로 통합 */}
+        {/* 헤더 영역 */}
         <div
           style={{
-            marginBottom: "12px",
-            padding: "12px 16px",
+            marginBottom: "20px",
+            padding: "16px",
             backgroundColor: "#e6f7ff",
             border: "1px solid #91d5ff",
             borderRadius: "8px",
             fontWeight: "600",
             color: "#1890ff",
             fontSize: "14px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
           }}
         >
           <div
@@ -929,35 +869,77 @@ const IssueModal = ({ isVisible, onClose, data }) => {
               display: "flex",
               alignItems: "center",
               gap: "16px",
-              flexWrap: "wrap",
+              fontSize: "14px",
             }}
           >
-            <span style={{ fontWeight: "600", fontSize: "16px" }}>
-              {rowData.issue}
+            <span style={{ fontWeight: "bold", fontSize: "16px" }}>
+              📂 {rowData.issue}
             </span>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                fontSize: "12px",
-              }}
-            >
-              <span>
-                📂 <strong>{rowData.category}</strong>
-              </span>
-              <span>
-                📅 <strong>{rowData.start || "미정"}</strong>
-              </span>
-              <span>
-                ⏰ <strong>{rowData.end || "미정"}</strong>
-              </span>
+            <span>
+              📅 <strong>{rowData.start || "미정"}</strong>
+            </span>
+            <span>
+              ⏰ <strong>{rowData.end || "미정"}</strong>
+            </span>
+          </div>
+        </div>
+
+        {/* 상태와 Summary 영역 */}
+        <div style={{ marginBottom: "24px" }}>
+          <div
+            style={{ display: "flex", gap: "20px", alignItems: "flex-start" }}
+          >
+            {/* 상태 선택 */}
+            <div style={{ flex: "0 0 150px" }}>
+              <h3
+                style={{
+                  margin: "0 0 12px 0",
+                  color: "#333",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                }}
+              >
+                📊 상태
+              </h3>
+              <Select
+                value={localCurrentStatus}
+                onChange={(value) => setLocalCurrentStatus(value)}
+                style={{ width: "100%" }}
+                size="large"
+                options={[
+                  { value: "pending", label: "대기중" },
+                  { value: "in-progress", label: "진행중" },
+                  { value: "completed", label: "완료" },
+                  { value: "blocked", label: "차단됨" },
+                ]}
+              />
+            </div>
+
+            {/* Summary 입력 */}
+            <div style={{ flex: 1 }}>
+              <h3
+                style={{
+                  margin: "0 0 12px 0",
+                  color: "#333",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                }}
+              >
+                📝 Summary
+              </h3>
+              <Input
+                value={localSummaryContent}
+                onChange={(e) => setLocalSummaryContent(e.target.value)}
+                placeholder="이슈에 대한 간단한 요약을 입력하세요..."
+                style={{ width: "100%" }}
+                size="large"
+              />
             </div>
           </div>
         </div>
 
-        {/* 이슈 상세 영역 */}
-        <div style={{ marginBottom: "24px", height: "400px" }}>
+        {/* 날짜 설정 영역 */}
+        <div style={{ marginBottom: "24px" }}>
           <h3
             style={{
               margin: "0 0 12px 0",
@@ -966,163 +948,94 @@ const IssueModal = ({ isVisible, onClose, data }) => {
               fontWeight: "600",
             }}
           >
-            📝 이슈 상세
+            📅 날짜 설정
           </h3>
-          <div>
-            {rowData.detail ? (
+          <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
+            <div style={{ flex: 1 }}>
               <div
                 style={{
-                  backgroundColor: "#fff",
-                  borderRadius: "6px",
-                  border: "1px solid #e8e8e8",
+                  fontSize: "12px",
+                  color: "#666",
+                  marginBottom: "8px",
+                  fontWeight: "bold",
                 }}
               >
-                <Tabs
-                  type="card"
-                  size="small"
-                  style={{
-                    border: "1px solid #e8e8e8",
-                    borderRadius: "6px",
-                    overflow: "hidden",
-                    margin: 0,
-                  }}
-                  items={rowData.detail
-                    .split("\n")
-                    .filter((line) => line.trim() !== "")
-                    .map((line, index) => ({
-                      key: index.toString(),
-                      label: (
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            padding: "4px 8px",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: "12px",
-                              fontWeight: "600",
-                              color: "#1890ff",
-                              backgroundColor: "#e6f7ff",
-                              padding: "2px 6px",
-                              borderRadius: "12px",
-                              minWidth: "20px",
-                              textAlign: "center",
-                            }}
-                          >
-                            {index + 1}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "12px",
-                              maxWidth: "100px",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                              fontWeight: "500",
-                            }}
-                          >
-                            {line.trim().substring(0, 15)}
-                            {line.trim().length > 15 ? "..." : ""}
-                          </span>
-                        </div>
-                      ),
-                      children: (
-                        <div
-                          style={{
-                            padding: "16px",
-                            backgroundColor: "#fafafa",
-                            borderRadius: "0 0 6px 6px",
-                            height: "270px",
-                            overflow: "auto",
-                          }}
-                        >
-                          <div
-                            style={{
-                              height: "100%",
-                              display: "flex",
-                              flexDirection: "column",
-                            }}
-                          >
-                            {/* 상단: 상태 선택 영역 */}
-                            <div style={{ marginBottom: "12px" }}>
-                              <div
-                                style={{
-                                  fontSize: "12px",
-                                  color: "#666",
-                                  marginBottom: "8px",
-                                  fontWeight: "bold",
-                                }}
-                              >
-                                📊 상태
-                              </div>
-                              <Select
-                                defaultValue="pending"
-                                style={{ width: "200px" }}
-                                size="middle"
-                                options={[
-                                  { value: "pending", label: "대기중" },
-                                  { value: "in-progress", label: "진행중" },
-                                  { value: "completed", label: "완료" },
-                                  { value: "blocked", label: "차단됨" },
-                                ]}
-                              />
-                            </div>
+                시작일
+              </div>
+              <DatePicker
+                value={rowData.start ? dayjs(rowData.start) : null}
+                onChange={(date, dateString) => {
+                  setRowData((prevData) =>
+                    prevData.map((row) =>
+                      row.id === rowData.id
+                        ? { ...row, start: dateString }
+                        : row
+                    )
+                  );
+                }}
+                format="YYYY-MM-DD"
+                style={{ width: "100%" }}
+                size="large"
+                placeholder="시작일 선택"
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#666",
+                  marginBottom: "8px",
+                  fontWeight: "bold",
+                }}
+              >
+                종료일
+              </div>
+              <DatePicker
+                value={rowData.end ? dayjs(rowData.end) : null}
+                onChange={(date, dateString) => {
+                  setRowData((prevData) =>
+                    prevData.map((row) =>
+                      row.id === rowData.id ? { ...row, end: dateString } : row
+                    )
+                  );
+                }}
+                format="YYYY-MM-DD"
+                style={{ width: "100%" }}
+                size="large"
+                placeholder="종료일 선택"
+              />
+            </div>
+          </div>
+        </div>
 
-                            {/* 하단: 텍스트 입력 영역 */}
-                            <div style={{ flex: 1 }}>
-                              <div
-                                style={{
-                                  fontSize: "12px",
-                                  color: "#666",
-                                  marginBottom: "8px",
-                                  fontWeight: "bold",
-                                }}
-                              >
-                                📝 상세 내용
-                              </div>
-                              <ReactQuill
-                                theme="snow"
-                                value={line.trim()}
-                                onChange={(content) => {
-                                  // 리치 에디터의 내용이 변경될 때 처리
-                                  console.log("Content changed:", content);
-                                }}
-                                modules={quillModules}
-                                formats={quillFormats}
-                                placeholder="내용을 입력하세요..."
-                                style={{
-                                  height: "170px",
-                                  fontSize: "14px",
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ),
-                    }))}
-                />
-              </div>
-            ) : (
-              <div
-                style={{
-                  padding: "15px",
-                  backgroundColor: "#f8f9fa",
-                  borderRadius: "6px",
-                  textAlign: "center",
-                  fontSize: "14px",
-                  color: "#999",
-                  minHeight: "120px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                상세 내용이 없습니다.
-              </div>
-            )}
+        {/* Issue 상세내용 리치 에디터 */}
+        <div style={{ marginBottom: "24px" }}>
+          <h3
+            style={{
+              margin: "0 0 12px 0",
+              color: "#333",
+              fontSize: "16px",
+              fontWeight: "600",
+            }}
+          >
+            📋 Issue 상세내용
+          </h3>
+          <div
+            style={{
+              border: "1px solid #d9d9d9",
+              borderRadius: "6px",
+              overflow: "hidden",
+            }}
+          >
+            <ReactQuill
+              theme="snow"
+              value={localIssueContent}
+              onChange={setLocalIssueContent}
+              modules={quillModules}
+              formats={quillFormats}
+              placeholder="이슈에 대한 상세 내용을 입력하세요..."
+              style={{ height: "200px" }}
+            />
           </div>
         </div>
 
@@ -1185,32 +1098,48 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 display: "flex",
                 alignItems: "center",
                 gap: "12px",
-                transition: "all 0.2s ease",
               }}
             >
+              <span style={{ fontSize: "24px", color: "#1890ff" }}>📄</span>
               <span
-                style={{
-                  fontSize: "24px",
-                  color: "#1890ff",
-                }}
-              >
-                📄
-              </span>
-              <span
-                style={{
-                  fontSize: "14px",
-                  fontWeight: "500",
-                  color: "#333",
-                }}
+                style={{ fontSize: "14px", fontWeight: "500", color: "#333" }}
               >
                 {rowData.file}
               </span>
             </div>
           </div>
         )}
+
+        {/* 저장 버튼 */}
+        <div style={{ textAlign: "center", marginTop: "20px" }}>
+          <Button
+            type="primary"
+            size="large"
+            onClick={() => {
+              // 데이터 업데이트 로직
+              setRowData((prevData) =>
+                prevData.map((row) =>
+                  row.id === rowData.id
+                    ? {
+                        ...row,
+                        detail: localIssueContent,
+                        summary: localSummaryContent,
+                        status: localCurrentStatus,
+                      }
+                    : row
+                )
+              );
+              message.success("변경사항이 저장되었습니다!");
+              // 드로워만 닫기
+              setIsDrawerVisible(false);
+            }}
+          >
+            💾 저장
+          </Button>
+        </div>
       </div>
     );
-  };
+  });
 
   // 현재 월과 년도 가져오기
   const getCurrentMonthYear = () => {
@@ -1231,6 +1160,21 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     ];
     return `${months[now.getMonth()]} Issue Sheet`;
   };
+
+  // Ag-Grid 이벤트 핸들러
+  const onRowClicked = (params) => {
+    setSelectedRow(params.data);
+    setIsDrawerVisible(true);
+  };
+
+  // 선택된 행이 변경될 때 상태 업데이트
+  useEffect(() => {
+    if (selectedRow) {
+      setIssueContent(selectedRow.detail || "");
+      setSummaryContent(selectedRow.summary || "");
+      setCurrentStatus(selectedRow.status || "pending");
+    }
+  }, [selectedRow]);
 
   return (
     <>
@@ -1333,14 +1277,14 @@ const IssueModal = ({ isVisible, onClose, data }) => {
             <AgGridReact
               columnDefs={columnDefs}
               rowData={rowData}
-              rowHeight={80}
+              rowHeight={60}
               getRowHeight={(params) => {
                 const detail = params.data?.detail || "";
                 const lines = detail
                   .split("\n")
                   .filter((line) => line.trim() !== "");
-                const baseHeight = 80;
-                const lineHeight = 16;
+                const baseHeight = 60;
+                const lineHeight = 14;
                 // 3줄까지는 기본 높이, 4줄부터 추가 높이
                 const extraLines = Math.max(0, lines.length - 3);
                 const extraHeight = extraLines * lineHeight;
@@ -1361,8 +1305,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 editable: false,
                 cellStyle: {
                   display: "flex",
-                  alignItems: "center",
-                  padding: "8px",
+                  alignItems: "flex-start",
+                  justifyContent: "flex-start",
+                  padding: "4px",
                 },
               }}
               pagination={true}
@@ -1370,10 +1315,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
               suppressRowClickSelection={false}
               rowSelection="single"
               animateRows={true}
-              onRowClicked={(event) => {
-                setSelectedRow(event.data);
-                showDrawer();
-              }}
+              onRowDoubleClicked={onRowClicked}
               // 기본 정렬 설정
               defaultSortModel={[
                 { colId: "end", sort: "desc" }, // 종료일 기준 내림차순 (늦을수록 위로, 없으면 최상단)
@@ -1385,7 +1327,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         </div>
       </Modal>
 
-      {/* Drawer for 상세 정보 */}
+      {/* Drawer for 상세 정보 편집 */}
       <Drawer
         title={
           <div
@@ -1398,23 +1340,25 @@ const IssueModal = ({ isVisible, onClose, data }) => {
               gap: "8px",
             }}
           >
-            📋 이슈 상세 정보
+            📋 이슈 상세 정보 편집
           </div>
         }
         placement="right"
-        width={600}
-        onClose={closeDrawer}
+        width="66.67%"
+        onClose={() => {
+          // 드로워 닫을 때 자동 저장
+          if (selectedRow && drawerRef.current) {
+            const localData = drawerRef.current.getLocalData();
+            if (localData) {
+              saveDrawerData(localData);
+            }
+          }
+          setIsDrawerVisible(false);
+        }}
         open={isDrawerVisible}
-        bodyStyle={{
-          padding: "20px",
-          backgroundColor: "#fafafa",
-        }}
-        headerStyle={{
-          backgroundColor: "#e6f7ff",
-          borderBottom: "1px solid #91d5ff",
-        }}
+        bodyStyle={{ padding: 0, height: "100%" }}
       >
-        <SelectedRowDetail rowData={selectedRow} />
+        <SelectedRowDetail rowData={selectedRow} ref={drawerRef} />
       </Drawer>
     </>
   );
