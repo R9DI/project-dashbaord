@@ -7,8 +7,9 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>프로젝트 이슈 관리 시스템</h1>
-        <p>이슈를 관리하고 프로젝트 진행 상황을 추적하세요</p>
+        <h1>Project Issue Management System</h1>
+        <p>Manage issues and track project progress</p>
+        <p>안녕</p>
       </header>
 
       <main style={{ padding: "20px" }}>
