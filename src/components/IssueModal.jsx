@@ -687,21 +687,12 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           return { __html: htmlContent };
         };
 
-        // 3줄로 제한하기 위해 임시 div 생성
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = detail;
-        const plainText = tempDiv.textContent || tempDiv.innerText || "";
-        const lines = plainText.split("\n");
-        const limitedLines = lines.slice(0, 3);
-        const displayText = limitedLines.join("\n");
-        const isTruncated = lines.length > 3;
-
         return (
           <div
             style={{
               padding: "8px",
               fontSize: "13px",
-              lineHeight: "0.3",
+              lineHeight: "1.0",
               color: "#333",
               maxHeight: "60px",
               overflow: "hidden",
@@ -713,20 +704,8 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           >
             <div
               dangerouslySetInnerHTML={createMarkup(detail)}
-              style={{
-                maxHeight: "60px",
-                overflow: "hidden",
-                lineHeight: "0.3",
-                textAlign: "left",
-              }}
+              className="rich-text-preview"
             />
-            {isTruncated && (
-              <div
-                style={{ color: "#666", fontSize: "12px", marginTop: "2px" }}
-              >
-                ...
-              </div>
-            )}
           </div>
         );
       },

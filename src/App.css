@@ -44,3 +44,12 @@ main {
     padding: 0 10px;
   }
 }
+.rich-text-preview p {
+  margin: 0 !important;
+}
+.rich-text-preview div,
+.rich-text-preview span {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.2 !important;
+}
