@@ -1,9 +1,8 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Modal,
   Button,
   Upload,
-  message,
   DatePicker,
   Image,
   Tag,
@@ -12,6 +11,16 @@ import {
   Input,
   Select,
   Drawer,
+  Card,
+  Space,
+  Typography,
+  Progress,
+  Form,
+  Row,
+  Col,
+  InputNumber,
+  message,
+  Collapse,
 } from "antd";
 import GanttChart from "./GanttChart.jsx";
 import { AgGridReact } from "ag-grid-react";
@@ -21,6 +30,7 @@ import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import "ag-grid-community/dist/styles/ag-grid.css";
 import "ag-grid-community/dist/styles/ag-theme-alpine.css";
+import { PlusOutlined } from "@ant-design/icons";
 
 const IssueModal = ({ isVisible, onClose, data }) => {
   // 리치 에디터 설정
@@ -73,6 +83,10 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 detail: localData.issueContent,
                 summary: localData.summaryContent,
                 status: localData.currentStatus,
+                img: localData.imageUrl, // 이미지 URL 업데이트
+                file: localData.fileUrl, // 첨부파일 URL 업데이트
+                start: localData.startDate, // 시작일 업데이트
+                end: localData.endDate, // 종료일 업데이트
               }
             : row
         )
@@ -262,56 +276,19 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     message.success("새 이슈가 추가되었습니다!");
   };
 
-  // 이미지 업로드/표시 셀 렌더러
+  // 이미지 표시 셀 렌더러 (읽기 전용)
   const ImageCell = (props) => {
-    const imageUrl = props.value;
-    const rowId = props.data.id;
-    const [imageLoaded, setImageLoaded] = useState(false);
-    const [imageError, setImageError] = useState(false);
-    const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
-    const containerRef = useRef(null);
+    const imageData = props.value;
 
-    // 이미지 업로드 처리
-    const handleImageUpload = (info) => {
-      // 파일이 선택되면 즉시 처리
-      if (info.fileList && info.fileList.length > 0) {
-        const file = info.fileList[0];
+    // 이미지 데이터가 배열인지 문자열인지 확인
+    const imageUrls = Array.isArray(imageData)
+      ? imageData
+      : imageData
+      ? [imageData]
+      : [];
+    const firstImageUrl = imageUrls[0];
 
-        // 파일 크기 제한 (5MB)
-        const isLt5M = file.size / 1024 / 1024 < 5;
-        if (!isLt5M) {
-          message.error("이미지는 5MB보다 작아야 합니다!");
-          return;
-        }
-
-        // 이미지 파일인지 확인
-        if (!file.type.startsWith("image/")) {
-          message.error("이미지 파일만 업로드 가능합니다!");
-          return;
-        }
-
-        message.success(`${file.name} 이미지가 성공적으로 업로드되었습니다.`);
-
-        // 이미지 URL을 데이터에 저장
-        const uploadedImageUrl = URL.createObjectURL(file);
-        setRowData((prevData) =>
-          prevData.map((row) =>
-            row.id === rowId ? { ...row, img: uploadedImageUrl } : { ...row }
-          )
-        );
-      }
-    };
-
-    const uploadProps = {
-      name: "image",
-      accept: "image/*",
-      showUploadList: false,
-      onChange: handleImageUpload,
-      beforeUpload: () => false, // 자동 업로드 방지
-    };
-
-    // 이미지가 없을 때 업로드 버튼 표시
-    if (!imageUrl) {
+    if (!firstImageUrl) {
       return (
         <div
           style={{
@@ -321,183 +298,67 @@ const IssueModal = ({ isVisible, onClose, data }) => {
             alignItems: "center",
             justifyContent: "center",
             padding: "8px",
+            color: "#999",
+            fontSize: "12px",
+            fontStyle: "italic",
           }}
         >
-          <Upload {...uploadProps}>
-            <Button
-              type="dashed"
-              size="small"
-              icon={<UploadOutlined />}
-              style={{
-                fontSize: "12px",
-                width: "100%",
-                height: "60px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "4px",
-              }}
-            >
-              <div>이미지 업로드</div>
-              <div style={{ fontSize: "10px", color: "#999" }}>
-                클릭하여 선택
-              </div>
-            </Button>
-          </Upload>
+          이미지 없음
         </div>
       );
     }
-
-    if (imageError) {
-      return (
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "8px",
-          }}
-        >
-          <span style={{ color: "#ff4d4f", fontSize: "12px" }}>
-            이미지 로드 실패
-          </span>
-          <Upload {...uploadProps}>
-            <Button size="small" type="primary">
-              다시 업로드
-            </Button>
-          </Upload>
-        </div>
-      );
-    }
-
-    const handleImageLoad = (e) => {
-      const img = e.target;
-      setImageSize({ width: img.naturalWidth, height: img.naturalHeight });
-      setImageLoaded(true);
-
-      // 이미지 로드 후 그리드 리사이즈 트리거
-      setTimeout(() => {
-        if (props.api) {
-          props.api.resetRowHeights();
-        }
-      }, 100);
-    };
-
-    // 이미지 비율 계산
-    const getImageStyle = () => {
-      if (!imageLoaded || !imageSize.width || !imageSize.height) {
-        return {
-          maxWidth: "100%",
-          maxHeight: "100%",
-          width: "auto",
-          height: "auto",
-          objectFit: "contain",
-        };
-      }
-
-      // 실제 컨테이너 크기 가져오기
-      const container = containerRef.current;
-      const containerWidth = container ? container.offsetWidth - 8 : 180; // 패딩 고려
-      const containerHeight = container ? container.offsetHeight - 8 : 80; // 패딩 고려
-
-      const imageRatio = imageSize.width / imageSize.height;
-      const containerRatio = containerWidth / containerHeight;
-
-      let finalWidth, finalHeight;
-
-      if (imageRatio > containerRatio) {
-        // 이미지가 가로로 긴 경우 - 가로를 컨테이너에 맞춤
-        finalWidth = containerWidth;
-        finalHeight = containerWidth / imageRatio;
-      } else {
-        // 이미지가 세로로 긴 경우 - 세로를 컨테이너에 맞춤
-        finalHeight = containerHeight;
-        finalWidth = containerHeight * imageRatio;
-      }
-
-      return {
-        width: `${finalWidth}px`,
-        height: `${finalHeight}px`,
-        objectFit: "contain",
-      };
-    };
 
     return (
       <div
-        ref={containerRef}
         style={{
           width: "100%",
           height: "100%",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          borderRadius: "4px",
-          minHeight: "80px",
-          minWidth: "180px",
           padding: "4px",
-          boxSizing: "border-box",
-          flexShrink: 0,
-          flexGrow: 1,
           position: "relative",
         }}
       >
-        {!imageLoaded && (
-          <div style={{ color: "#999", fontSize: "12px" }}>로딩중...</div>
+        <Image.PreviewGroup>
+          <Image
+            src={firstImageUrl}
+            alt="이슈 이미지"
+            style={{
+              maxWidth: "100%",
+              maxHeight: "100%",
+              width: "auto",
+              height: "auto",
+              objectFit: "contain",
+              borderRadius: "4px",
+              border: "1px solid #e8e8e8",
+            }}
+            fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3Ik1RnG4W+FgYxN"
+          />
+        </Image.PreviewGroup>
+        {/* 여러 이미지가 있을 때 개수 표시 */}
+        {imageUrls.length > 1 && (
+          <div
+            style={{
+              position: "absolute",
+              top: "2px",
+              right: "2px",
+              backgroundColor: "#1890ff",
+              color: "white",
+              borderRadius: "50%",
+              width: "20px",
+              height: "20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "10px",
+              fontWeight: "bold",
+              border: "2px solid white",
+            }}
+          >
+            +{imageUrls.length - 1}
+          </div>
         )}
-        <Image
-          src={imageUrl}
-          alt="이슈 이미지"
-          style={{
-            ...getImageStyle(),
-            display: imageLoaded ? "block" : "none",
-            margin: "0 auto",
-            borderRadius: "4px",
-            border: "1px solid #e8e8e8",
-            flexShrink: 0,
-            maxWidth: "100%",
-            maxHeight: "100%",
-          }}
-          preview={{
-            mask: "클릭하여 확대",
-            maskClassName: "custom-mask",
-          }}
-          onLoad={handleImageLoad}
-          onError={() => setImageError(true)}
-        />
-
-        {/* 이미지 교체 버튼 (호버 시 표시) */}
-        <div
-          style={{
-            position: "absolute",
-            top: "4px",
-            right: "4px",
-            opacity: 0,
-            transition: "opacity 0.2s",
-            cursor: "pointer",
-          }}
-          onMouseEnter={(e) => (e.target.style.opacity = 1)}
-          onMouseLeave={(e) => (e.target.style.opacity = 0)}
-        >
-          <Upload {...uploadProps}>
-            <Button
-              size="small"
-              type="primary"
-              style={{
-                minWidth: "auto",
-                padding: "2px 6px",
-                fontSize: "10px",
-                borderRadius: "12px",
-              }}
-            >
-              교체
-            </Button>
-          </Upload>
-        </div>
       </div>
     );
   };
@@ -511,9 +372,12 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       <div
         style={{
           padding: "4px 8px",
-          fontSize: "12px",
+          fontSize: "13px",
           color: startDate ? "#333" : "#999",
           fontStyle: startDate ? "normal" : "italic",
+          display: "flex",
+          alignItems: "center",
+          height: "100%",
         }}
       >
         {startDate || "미정"}
@@ -530,9 +394,12 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       <div
         style={{
           padding: "4px 8px",
-          fontSize: "12px",
+          fontSize: "13px",
           color: endDate ? "#333" : "#999",
           fontStyle: endDate ? "normal" : "italic",
+          display: "flex",
+          alignItems: "center",
+          height: "100%",
         }}
       >
         {endDate || "미정"}
@@ -597,19 +464,95 @@ const IssueModal = ({ isVisible, onClose, data }) => {
 
   // File 셀 렌더러 (읽기 전용)
   const FileCell = (props) => {
-    const currentRow = props.data;
-    const file = currentRow?.file || "";
+    const fileData = props.value;
+
+    // 파일 데이터가 배열인지 문자열인지 확인
+    const files = Array.isArray(fileData)
+      ? fileData
+      : fileData
+      ? [fileData]
+      : [];
+    const firstFile = files[0];
+
+    if (!firstFile) {
+      return (
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "8px",
+            color: "#999",
+            fontSize: "12px",
+            fontStyle: "italic",
+          }}
+        >
+          파일 없음
+        </div>
+      );
+    }
+
+    const fileName = firstFile.name || firstFile || "파일";
 
     return (
       <div
         style={{
-          padding: "8px",
-          fontSize: "12px",
-          color: file ? "#333" : "#999",
-          fontStyle: file ? "normal" : "italic",
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "4px",
+          position: "relative",
         }}
       >
-        {file || "파일 없음"}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            maxWidth: "100%",
+          }}
+        >
+          <span style={{ fontSize: "16px", color: "#1890ff" }}>📄</span>
+          <span
+            style={{
+              fontSize: "12px",
+              color: "#333",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              maxWidth: "80px",
+            }}
+          >
+            {fileName}
+          </span>
+        </div>
+        {/* 여러 파일이 있을 때 개수 표시 */}
+        {files.length > 1 && (
+          <div
+            style={{
+              position: "absolute",
+              top: "2px",
+              right: "2px",
+              backgroundColor: "#1890ff",
+              color: "white",
+              borderRadius: "50%",
+              width: "20px",
+              height: "20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "10px",
+              fontWeight: "bold",
+              border: "2px solid white",
+            }}
+          >
+            +{files.length - 1}
+          </div>
+        )}
       </div>
     );
   };
@@ -624,7 +567,11 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         color: "#1890ff",
         textAlign: "left",
         justifyContent: "flex-start",
+        alignItems: "center",
         fontWeight: "bold",
+        fontSize: "13px",
+        padding: "8px",
+        display: "flex",
       },
     },
     {
@@ -633,7 +580,13 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       editable: false,
       width: 120,
       cellRendererFramework: ImageCell,
-      cellStyle: { padding: "4px" },
+      cellStyle: {
+        display: "flex !important",
+        alignItems: "center !important",
+        justifyContent: "center !important",
+        padding: "8px !important",
+        height: "100% !important",
+      },
     },
     {
       field: "status",
@@ -671,13 +624,13 @@ const IssueModal = ({ isVisible, onClose, data }) => {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 4px;
+            padding: 8px;
             width: 100%;
           ">
             <div style="
               padding: 2px 6px;
               border-radius: 8px;
-              font-size: 11px;
+              font-size: 12px;
               font-weight: bold;
               background-color: ${color};
               color: white;
@@ -687,7 +640,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
               flex-shrink: 0;
             ">${statusLabel}</div>
             <div style="
-              font-size: 11px;
+              font-size: 13px;
               color: #333;
               line-height: 1.3;
               flex: 1;
@@ -699,7 +652,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         display: "flex !important",
         alignItems: "center !important",
         justifyContent: "flex-start !important",
-        padding: "4px !important",
+        padding: "8px !important",
         height: "100% !important",
       },
     },
@@ -713,7 +666,17 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         const detail = params.value || "";
         if (!detail) {
           return (
-            <div style={{ color: "#999", fontStyle: "italic", padding: "8px" }}>
+            <div
+              style={{
+                color: "#999",
+                fontStyle: "italic",
+                padding: "8px",
+                fontSize: "13px",
+                display: "flex",
+                alignItems: "center",
+                height: "100%",
+              }}
+            >
               내용 없음
             </div>
           );
@@ -737,7 +700,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           <div
             style={{
               padding: "8px",
-              fontSize: "12px",
+              fontSize: "13px",
               lineHeight: "0.3",
               color: "#333",
               maxHeight: "60px",
@@ -745,6 +708,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
               textAlign: "left",
               display: "flex",
               alignItems: "center",
+              height: "100%",
             }}
           >
             <div
@@ -758,7 +722,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
             />
             {isTruncated && (
               <div
-                style={{ color: "#666", fontSize: "11px", marginTop: "2px" }}
+                style={{ color: "#666", fontSize: "12px", marginTop: "2px" }}
               >
                 ...
               </div>
@@ -768,9 +732,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       },
       cellStyle: {
         display: "flex",
-        alignItems: "flex-start",
+        alignItems: "center",
         justifyContent: "flex-start",
-        padding: "4px",
+        padding: "8px",
         height: "100%",
       },
     },
@@ -780,7 +744,12 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       editable: false,
       width: 120,
       cellRendererFramework: StartDateCell,
-      cellStyle: { padding: "4px" },
+      cellStyle: {
+        padding: "8px",
+        fontSize: "13px",
+        display: "flex",
+        alignItems: "center",
+      },
     },
     {
       field: "end",
@@ -788,7 +757,12 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       editable: false,
       width: 120,
       cellRendererFramework: EndDateCell,
-      cellStyle: { padding: "4px" },
+      cellStyle: {
+        padding: "8px",
+        fontSize: "13px",
+        display: "flex",
+        alignItems: "center",
+      },
     },
   ];
 
@@ -803,12 +777,44 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     const [localCurrentStatus, setLocalCurrentStatus] = useState(
       rowData?.status || "pending"
     );
+    const [localImageUrls, setLocalImageUrls] = useState(
+      rowData?.img
+        ? Array.isArray(rowData.img)
+          ? rowData.img
+          : [rowData.img]
+        : []
+    );
+    const [localFileUrls, setLocalFileUrls] = useState(
+      rowData?.file
+        ? Array.isArray(rowData.file)
+          ? rowData.file
+          : [rowData.file]
+        : []
+    );
+    const [localStartDate, setLocalStartDate] = useState(rowData?.start || "");
+    const [localEndDate, setLocalEndDate] = useState(rowData?.end || "");
 
     // rowData가 변경될 때 로컬 상태 업데이트
     useEffect(() => {
       setLocalIssueContent(rowData?.detail || "");
       setLocalSummaryContent(rowData?.summary || "");
       setLocalCurrentStatus(rowData?.status || "pending");
+      setLocalImageUrls(
+        rowData?.img
+          ? Array.isArray(rowData.img)
+            ? rowData.img
+            : [rowData.img]
+          : []
+      );
+      setLocalFileUrls(
+        rowData?.file
+          ? Array.isArray(rowData.file)
+            ? rowData.file
+            : [rowData.file]
+          : []
+      );
+      setLocalStartDate(rowData?.start || "");
+      setLocalEndDate(rowData?.end || "");
     }, [rowData]);
 
     // ref를 통해 로컬 데이터를 외부로 전달
@@ -817,6 +823,10 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         issueContent: localIssueContent,
         summaryContent: localSummaryContent,
         currentStatus: localCurrentStatus,
+        imageUrl: localImageUrls, // 이미지 URL 배열 전달
+        fileUrl: localFileUrls, // 첨부파일 URL 배열 전달
+        startDate: localStartDate, // 시작일 전달
+        endDate: localEndDate, // 종료일 전달
       }),
     }));
 
@@ -851,39 +861,6 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           overflow: "auto",
         }}
       >
-        {/* 헤더 영역 */}
-        <div
-          style={{
-            marginBottom: "20px",
-            padding: "16px",
-            backgroundColor: "#e6f7ff",
-            border: "1px solid #91d5ff",
-            borderRadius: "8px",
-            fontWeight: "600",
-            color: "#1890ff",
-            fontSize: "14px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "16px",
-              fontSize: "14px",
-            }}
-          >
-            <span style={{ fontWeight: "bold", fontSize: "16px" }}>
-              📂 {rowData.issue}
-            </span>
-            <span>
-              📅 <strong>{rowData.start || "미정"}</strong>
-            </span>
-            <span>
-              ⏰ <strong>{rowData.end || "미정"}</strong>
-            </span>
-          </div>
-        </div>
-
         {/* 상태와 Summary 영역 */}
         <div style={{ marginBottom: "24px" }}>
           <div
@@ -963,15 +940,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 시작일
               </div>
               <DatePicker
-                value={rowData.start ? dayjs(rowData.start) : null}
+                value={localStartDate ? dayjs(localStartDate) : null}
                 onChange={(date, dateString) => {
-                  setRowData((prevData) =>
-                    prevData.map((row) =>
-                      row.id === rowData.id
-                        ? { ...row, start: dateString }
-                        : row
-                    )
-                  );
+                  setLocalStartDate(dateString);
                 }}
                 format="YYYY-MM-DD"
                 style={{ width: "100%" }}
@@ -991,13 +962,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 종료일
               </div>
               <DatePicker
-                value={rowData.end ? dayjs(rowData.end) : null}
+                value={localEndDate ? dayjs(localEndDate) : null}
                 onChange={(date, dateString) => {
-                  setRowData((prevData) =>
-                    prevData.map((row) =>
-                      row.id === rowData.id ? { ...row, end: dateString } : row
-                    )
-                  );
+                  setLocalEndDate(dateString);
                 }}
                 format="YYYY-MM-DD"
                 style={{ width: "100%" }}
@@ -1040,75 +1007,458 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         </div>
 
         {/* 첨부 이미지 영역 */}
-        {rowData.img && (
-          <div style={{ marginBottom: "24px" }}>
-            <h3
-              style={{
-                margin: "0 0 12px 0",
-                color: "#333",
-                fontSize: "16px",
-                fontWeight: "600",
-              }}
-            >
-              🖼️ 첨부 이미지
-            </h3>
-            <div
-              style={{
-                textAlign: "center",
-                padding: "16px",
-                backgroundColor: "#fff",
-                border: "1px solid #e8e8e8",
-                borderRadius: "6px",
-              }}
-            >
-              <img
-                src={rowData.img}
-                alt="이슈 이미지"
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "200px",
-                  borderRadius: "6px",
-                  border: "1px solid #e8e8e8",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+        <div style={{ marginBottom: "24px" }}>
+          <h3
+            style={{
+              margin: "0 0 12px 0",
+              color: "#333",
+              fontSize: "16px",
+              fontWeight: "600",
+            }}
+          >
+            🖼️ 첨부 이미지
+          </h3>
+          <div
+            style={{
+              border: "2px dashed #d9d9d9",
+              borderRadius: "8px",
+              padding: "20px",
+              textAlign: "center",
+              backgroundColor: "#fafafa",
+              transition: "all 0.3s",
+            }}
+          >
+            {localImageUrls.length > 0 ? (
+              <div>
+                {/* 이미지 그리드 */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(200px, 1fr))",
+                    gap: "16px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <Image.PreviewGroup>
+                    {localImageUrls.map((imageUrl, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          position: "relative",
+                          border: "1px solid #e8e8e8",
+                          borderRadius: "8px",
+                          overflow: "hidden",
+                          backgroundColor: "#fff",
+                        }}
+                      >
+                        <Image
+                          src={imageUrl}
+                          alt={`이슈 이미지 ${index + 1}`}
+                          style={{
+                            width: "100%",
+                            height: "150px",
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                          fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3Ik1RnG4W+FgYxN"
+                        />
+                        <Button
+                          type="primary"
+                          danger
+                          size="small"
+                          style={{
+                            position: "absolute",
+                            top: "8px",
+                            right: "8px",
+                            borderRadius: "50%",
+                            width: "28px",
+                            height: "28px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "12px",
+                            padding: 0,
+                          }}
+                          onClick={() => {
+                            setLocalImageUrls((prev) =>
+                              prev.filter((_, i) => i !== index)
+                            );
+                          }}
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    ))}
+                  </Image.PreviewGroup>
+                </div>
+
+                {/* 추가 업로드 버튼 */}
+                <Upload.Dragger
+                  name="image"
+                  accept="image/*"
+                  showUploadList={false}
+                  beforeUpload={(file) => {
+                    // 파일 크기 제한 (5MB)
+                    const isLt5M = file.size / 1024 / 1024 < 5;
+                    if (!isLt5M) {
+                      message.error("이미지는 5MB보다 작아야 합니다!");
+                      return false;
+                    }
+
+                    // 이미지 파일인지 확인
+                    if (!file.type.startsWith("image/")) {
+                      message.error("이미지 파일만 업로드 가능합니다!");
+                      return false;
+                    }
+
+                    // 이미지 URL을 로컬 상태에 추가
+                    const uploadedImageUrl = URL.createObjectURL(file);
+                    setLocalImageUrls((prev) => [...prev, uploadedImageUrl]);
+
+                    message.success(
+                      `${file.name} 이미지가 성공적으로 추가되었습니다.`
+                    );
+                    return false; // 자동 업로드 방지
+                  }}
+                  style={{
+                    border: "2px dashed #d9d9d9",
+                    borderRadius: "8px",
+                    padding: "16px",
+                    textAlign: "center",
+                    backgroundColor: "#fafafa",
+                    transition: "all 0.3s",
+                  }}
+                >
+                  <div style={{ padding: "12px" }}>
+                    <div style={{ fontSize: "24px", marginBottom: "8px" }}>
+                      ➕
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: "600",
+                        color: "#333",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      추가 이미지 업로드
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#666",
+                      }}
+                    >
+                      클릭하거나 드래그하여 추가
+                    </div>
+                  </div>
+                </Upload.Dragger>
+              </div>
+            ) : (
+              <Upload.Dragger
+                name="image"
+                accept="image/*"
+                showUploadList={false}
+                beforeUpload={(file) => {
+                  // 파일 크기 제한 (5MB)
+                  const isLt5M = file.size / 1024 / 1024 < 5;
+                  if (!isLt5M) {
+                    message.error("이미지는 5MB보다 작아야 합니다!");
+                    return false;
+                  }
+
+                  // 이미지 파일인지 확인
+                  if (!file.type.startsWith("image/")) {
+                    message.error("이미지 파일만 업로드 가능합니다!");
+                    return false;
+                  }
+
+                  // 이미지 URL을 로컬 상태에 저장
+                  const uploadedImageUrl = URL.createObjectURL(file);
+                  setLocalImageUrls([uploadedImageUrl]); // 로컬 상태만 업데이트
+
+                  message.success(
+                    `${file.name} 이미지가 성공적으로 업로드되었습니다.`
+                  );
+                  return false; // 자동 업로드 방지
                 }}
-              />
-            </div>
+                style={{
+                  border: "none",
+                  background: "transparent",
+                }}
+              >
+                <div style={{ padding: "20px" }}>
+                  <div style={{ fontSize: "48px", marginBottom: "16px" }}>
+                    📁
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      marginBottom: "8px",
+                      color: "#333",
+                    }}
+                  >
+                    이미지를 드래그하여 업로드
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#666",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    또는 클릭하여 파일 선택
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#999" }}>
+                    지원 형식: JPG, PNG, GIF (최대 5MB)
+                  </div>
+                </div>
+              </Upload.Dragger>
+            )}
           </div>
-        )}
+        </div>
 
         {/* 첨부 파일 영역 */}
-        {rowData.file && (
-          <div style={{ marginBottom: "24px" }}>
-            <h3
-              style={{
-                margin: "0 0 12px 0",
-                color: "#333",
-                fontSize: "16px",
-                fontWeight: "600",
-              }}
-            >
-              📄 첨부 파일
-            </h3>
-            <div
-              style={{
-                padding: "16px",
-                backgroundColor: "#fff",
-                border: "1px solid #e8e8e8",
-                borderRadius: "6px",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-              }}
-            >
-              <span style={{ fontSize: "24px", color: "#1890ff" }}>📄</span>
-              <span
-                style={{ fontSize: "14px", fontWeight: "500", color: "#333" }}
+        <div style={{ marginBottom: "24px" }}>
+          <h3
+            style={{
+              margin: "0 0 12px 0",
+              color: "#333",
+              fontSize: "16px",
+              fontWeight: "600",
+            }}
+          >
+            📄 첨부 파일
+          </h3>
+          <div
+            style={{
+              border: "2px dashed #d9d9d9",
+              borderRadius: "8px",
+              padding: "20px",
+              textAlign: "center",
+              backgroundColor: "#fafafa",
+              transition: "all 0.3s",
+            }}
+          >
+            {localFileUrls.length > 0 ? (
+              <div>
+                {/* 파일 목록 */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  {localFileUrls.map((fileUrl, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px",
+                        backgroundColor: "#fff",
+                        border: "1px solid #e8e8e8",
+                        borderRadius: "6px",
+                        gap: "12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          flex: 1,
+                        }}
+                      >
+                        <span style={{ fontSize: "20px", color: "#1890ff" }}>
+                          📄
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            color: "#333",
+                            wordBreak: "break-all",
+                          }}
+                        >
+                          {fileUrl.name || `파일 ${index + 1}`}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <Button
+                          type="link"
+                          size="small"
+                          onClick={() => {
+                            // 파일 다운로드
+                            const link = document.createElement("a");
+                            link.href = fileUrl;
+                            link.download = fileUrl.name || `파일_${index + 1}`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                          style={{ padding: "4px 8px" }}
+                        >
+                          📥 다운로드
+                        </Button>
+                        <Button
+                          type="primary"
+                          danger
+                          size="small"
+                          onClick={() => {
+                            setLocalFileUrls((prev) =>
+                              prev.filter((_, i) => i !== index)
+                            );
+                          }}
+                          style={{
+                            borderRadius: "50%",
+                            width: "28px",
+                            height: "28px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "12px",
+                            padding: 0,
+                          }}
+                        >
+                          ✕
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 추가 업로드 버튼 */}
+                <Upload.Dragger
+                  name="file"
+                  accept="*/*"
+                  showUploadList={false}
+                  beforeUpload={(file) => {
+                    // 파일 크기 제한 (10MB)
+                    const isLt10M = file.size / 1024 / 1024 < 10;
+                    if (!isLt10M) {
+                      message.error("파일은 10MB보다 작아야 합니다!");
+                      return false;
+                    }
+
+                    // 파일 URL을 로컬 상태에 추가
+                    const uploadedFileUrl = URL.createObjectURL(file);
+                    const fileWithName = {
+                      url: uploadedFileUrl,
+                      name: file.name,
+                      size: file.size,
+                      type: file.type,
+                    };
+                    setLocalFileUrls((prev) => [...prev, fileWithName]);
+
+                    message.success(
+                      `${file.name} 파일이 성공적으로 추가되었습니다.`
+                    );
+                    return false; // 자동 업로드 방지
+                  }}
+                  style={{
+                    border: "2px dashed #d9d9d9",
+                    borderRadius: "8px",
+                    padding: "16px",
+                    textAlign: "center",
+                    backgroundColor: "#fafafa",
+                    transition: "all 0.3s",
+                  }}
+                >
+                  <div style={{ padding: "12px" }}>
+                    <div style={{ fontSize: "24px", marginBottom: "8px" }}>
+                      ➕
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: "600",
+                        color: "#333",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      추가 파일 업로드
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        color: "#666",
+                      }}
+                    >
+                      클릭하거나 드래그하여 추가
+                    </div>
+                  </div>
+                </Upload.Dragger>
+              </div>
+            ) : (
+              <Upload.Dragger
+                name="file"
+                accept="*/*"
+                showUploadList={false}
+                beforeUpload={(file) => {
+                  // 파일 크기 제한 (10MB)
+                  const isLt10M = file.size / 1024 / 1024 < 10;
+                  if (!isLt10M) {
+                    message.error("파일은 10MB보다 작아야 합니다!");
+                    return false;
+                  }
+
+                  // 파일 URL을 로컬 상태에 저장
+                  const uploadedFileUrl = URL.createObjectURL(file);
+                  const fileWithName = {
+                    url: uploadedFileUrl,
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                  };
+                  setLocalFileUrls([fileWithName]);
+
+                  message.success(
+                    `${file.name} 파일이 성공적으로 업로드되었습니다.`
+                  );
+                  return false; // 자동 업로드 방지
+                }}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                }}
               >
-                {rowData.file}
-              </span>
-            </div>
+                <div style={{ padding: "20px" }}>
+                  <div style={{ fontSize: "48px", marginBottom: "16px" }}>
+                    📁
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      marginBottom: "8px",
+                      color: "#333",
+                    }}
+                  >
+                    파일을 드래그하여 업로드
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#666",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    또는 클릭하여 파일 선택
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#999" }}>
+                    모든 파일 형식 지원 (최대 10MB)
+                  </div>
+                </div>
+              </Upload.Dragger>
+            )}
           </div>
-        )}
+        </div>
 
         {/* 저장 버튼 */}
         <div style={{ textAlign: "center", marginTop: "20px" }}>
@@ -1125,6 +1475,10 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                         detail: localIssueContent,
                         summary: localSummaryContent,
                         status: localCurrentStatus,
+                        img: localImageUrls, // 이미지 URL 배열 업데이트
+                        file: localFileUrls, // 첨부파일 URL 배열 업데이트
+                        start: localStartDate, // 시작일 업데이트
+                        end: localEndDate, // 종료일 업데이트
                       }
                     : row
                 )
@@ -1206,12 +1560,16 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           height: "85vh",
           padding: "24px",
           backgroundColor: "#fafafa",
+          overflow: "auto",
         }}
         footer={[
           <Button
             key="back"
             onClick={handleCancel}
-            style={{ borderRadius: "6px" }}
+            style={{
+              borderRadius: "6px",
+              fontWeight: "500",
+            }}
           >
             닫기
           </Button>,
@@ -1219,112 +1577,139 @@ const IssueModal = ({ isVisible, onClose, data }) => {
             key="submit"
             type="primary"
             onClick={handleOk}
-            style={{ borderRadius: "6px" }}
+            style={{
+              borderRadius: "6px",
+              fontWeight: "500",
+            }}
           >
-            저장
+            확인
           </Button>,
         ]}
       >
-        {/* 간트 차트 */}
-        <div style={{ height: "40%", marginBottom: "16px" }}>
-          <GanttChart issueData={rowData} />
-        </div>
-
-        {/* 전체 이슈 목록 */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            height: "60%",
-          }}
-        >
-          <div
-            style={{
-              marginBottom: "12px",
-              padding: "12px 16px",
-              backgroundColor: "#e6f7ff",
-              border: "1px solid #91d5ff",
-              borderRadius: "8px",
-              fontWeight: "600",
-              color: "#1890ff",
-              fontSize: "14px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              📋 전체 이슈 목록 ({rowData.length}개)
-            </div>
-            <Button
-              type="primary"
-              onClick={addNewIssue}
-              icon={<span>➕</span>}
-              size="small"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-                fontWeight: "600",
-                borderRadius: "6px",
-                boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-              }}
-            >
-              새 이슈 추가
-            </Button>
-          </div>
-          <div className="ag-theme-alpine" style={{ flex: 1, width: "100%" }}>
-            <AgGridReact
-              columnDefs={columnDefs}
-              rowData={rowData}
-              rowHeight={60}
-              getRowHeight={(params) => {
-                const detail = params.data?.detail || "";
-                const lines = detail
-                  .split("\n")
-                  .filter((line) => line.trim() !== "");
-                const baseHeight = 60;
-                const lineHeight = 14;
-                // 3줄까지는 기본 높이, 4줄부터 추가 높이
-                const extraLines = Math.max(0, lines.length - 3);
-                const extraHeight = extraLines * lineHeight;
-                return baseHeight + extraHeight;
-              }}
-              getRowStyle={(params) => {
-                // 이번 달에 진행 중인 항목은 하얀색 배경
-                if (isCurrentMonthActive(params.data)) {
-                  return { backgroundColor: "#ffffff" };
-                }
-                // 완료된 과거 항목은 회색 배경
-                return { backgroundColor: "#f5f5f5" };
-              }}
-              defaultColDef={{
-                resizable: true,
-                sortable: true,
-                filter: true,
-                editable: false,
-                cellStyle: {
-                  display: "flex",
-                  alignItems: "flex-start",
-                  justifyContent: "flex-start",
-                  padding: "4px",
-                },
-              }}
-              pagination={true}
-              paginationPageSize={10}
-              suppressRowClickSelection={false}
-              rowSelection="single"
-              animateRows={true}
-              onRowDoubleClicked={onRowClicked}
-              // 기본 정렬 설정
-              defaultSortModel={[
-                { colId: "end", sort: "desc" }, // 종료일 기준 내림차순 (늦을수록 위로, 없으면 최상단)
-                { colId: "start", sort: "desc" }, // 시작일 기준 내림차순 (늦을수록 위로)
-                { colId: "category", sort: "asc" }, // 카테고리 기준 오름차순
-              ]}
-            />
-          </div>
-        </div>
+        <Collapse
+          defaultActiveKey={["2"]} // 기본적으로 전체 이슈 목록이 열려있음
+          items={[
+            {
+              key: "1",
+              label: (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    fontWeight: "600",
+                  }}
+                >
+                  📊 Issue Schedule
+                </div>
+              ),
+              children: (
+                <div style={{ height: "350px", minHeight: "350px" }}>
+                  <GanttChart issueData={rowData} />
+                </div>
+              ),
+            },
+            {
+              key: "2",
+              label: (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    width: "100%",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      fontWeight: "600",
+                    }}
+                  >
+                    📋 전체 이슈 목록 ({rowData.length}개)
+                  </div>
+                  <Button
+                    type="primary"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Collapse 토글 방지
+                      addNewIssue();
+                    }}
+                    icon={<span>➕</span>}
+                    size="small"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      fontWeight: "600",
+                      borderRadius: "6px",
+                      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                    }}
+                  >
+                    새 이슈 추가
+                  </Button>
+                </div>
+              ),
+              children: (
+                <div
+                  className="ag-theme-alpine"
+                  style={{ height: "600px", minHeight: "600px", width: "100%" }}
+                >
+                  <AgGridReact
+                    columnDefs={columnDefs}
+                    rowData={rowData}
+                    rowHeight={80}
+                    getRowHeight={(params) => {
+                      const detail = params.data?.detail || "";
+                      const lines = detail
+                        .split("\n")
+                        .filter((line) => line.trim() !== "");
+                      const baseHeight = 80;
+                      const lineHeight = 16;
+                      // 3줄까지는 기본 높이, 4줄부터 추가 높이
+                      const extraLines = Math.max(0, lines.length - 3);
+                      const extraHeight = extraLines * lineHeight;
+                      return baseHeight + extraHeight;
+                    }}
+                    getRowStyle={(params) => {
+                      // 이번 달에 진행 중인 항목은 하얀색 배경
+                      if (isCurrentMonthActive(params.data)) {
+                        return { backgroundColor: "#ffffff" };
+                      }
+                      // 완료된 과거 항목은 회색 배경
+                      return { backgroundColor: "#f5f5f5" };
+                    }}
+                    defaultColDef={{
+                      resizable: true,
+                      sortable: true,
+                      filter: true,
+                      editable: false,
+                      cellStyle: {
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "flex-start",
+                        padding: "4px",
+                      },
+                    }}
+                    pagination={true}
+                    paginationPageSize={10}
+                    suppressRowClickSelection={false}
+                    rowSelection="single"
+                    animateRows={true}
+                    onRowDoubleClicked={onRowClicked}
+                    // 기본 정렬 설정
+                    defaultSortModel={[
+                      { colId: "end", sort: "desc" }, // 종료일 기준 내림차순 (늦을수록 위로, 없으면 최상단)
+                      { colId: "start", sort: "desc" }, // 시작일 기준 내림차순 (늦을수록 위로)
+                      { colId: "category", sort: "asc" }, // 카테고리 기준 오름차순
+                    ]}
+                  />
+                </div>
+              ),
+            },
+          ]}
+        />
       </Modal>
 
       {/* Drawer for 상세 정보 편집 */}
@@ -1340,7 +1725,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
               gap: "8px",
             }}
           >
-            📋 이슈 상세 정보 편집
+            📋 {selectedRow?.issue || "이슈 상세 정보 편집"}
           </div>
         }
         placement="right"
