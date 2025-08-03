@@ -1593,7 +1593,13 @@ const IssueModal = ({ isVisible, onClose, data }) => {
               ),
               children: (
                 <div>
-                  <div style={{ height: "350px", minHeight: "350px" }}>
+                  <div
+                    style={{
+                      height: `${Math.max(rowData.length * 28 + 80, 180)}px`,
+                      minHeight: "180px",
+                      maxHeight: "400px",
+                    }}
+                  >
                     <GanttChart issueData={rowData} />
                   </div>
                   <GanttLegend />

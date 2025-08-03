@@ -93,31 +93,24 @@ const GanttChart = ({ issueData = [] }) => {
 
     // 마진 설정
     const margin = {
-      top: 60,
+      top: 80,
       right: 20,
       bottom: 60,
       left: 120,
     };
 
-    // 바 높이 계산 (임시 차트 높이 사용)
-    const tempChartHeight = containerHeight - margin.top - margin.bottom;
-    const barHeight = Math.max(
-      Math.min(tempChartHeight / ganttData.length, 25),
-      15
-    );
+    // 바 높이 계산 (고정 높이 사용)
+    const barHeight = 20;
     const barSpacing = 8;
 
     // 실제 차트 높이 계산 (이슈 개수에 따라)
     const actualChartHeight =
       ganttData.length * (barHeight + barSpacing) - barSpacing;
-    const finalChartHeight = Math.max(actualChartHeight, tempChartHeight);
+    const finalChartHeight = Math.max(actualChartHeight, 100); // 최소 100px로 줄임
 
     // SVG 크기 설정
     const svgWidth = containerWidth;
-    const svgHeight = Math.max(
-      containerHeight,
-      margin.top + finalChartHeight + margin.bottom
-    );
+    const svgHeight = margin.top + finalChartHeight + margin.bottom;
 
     const chartWidth = svgWidth - margin.left - margin.right;
     const chartHeight = svgHeight - margin.top - margin.bottom;
@@ -174,7 +167,7 @@ const GanttChart = ({ issueData = [] }) => {
           "text"
         );
         text.setAttribute("x", x);
-        text.setAttribute("y", margin.top - 20);
+        text.setAttribute("y", margin.top - 45);
         text.setAttribute("text-anchor", "middle");
         text.setAttribute("font-size", "11px");
         text.setAttribute("fill", "#666");
@@ -217,7 +210,7 @@ const GanttChart = ({ issueData = [] }) => {
             "text"
           );
           monthLabel.setAttribute("x", xScale(nextMonth) + 5);
-          monthLabel.setAttribute("y", margin.top - 35);
+          monthLabel.setAttribute("y", margin.top - 8);
           monthLabel.setAttribute("text-anchor", "start");
           monthLabel.setAttribute("font-size", "12px");
           monthLabel.setAttribute("font-weight", "bold");
@@ -257,7 +250,7 @@ const GanttChart = ({ issueData = [] }) => {
           "text"
         );
         todayLabel.setAttribute("x", todayX + 5);
-        todayLabel.setAttribute("y", margin.top - 25);
+        todayLabel.setAttribute("y", margin.top - 22);
         todayLabel.setAttribute("text-anchor", "start");
         todayLabel.setAttribute("font-size", "11px");
         todayLabel.setAttribute("font-weight", "bold");
@@ -312,12 +305,61 @@ const GanttChart = ({ issueData = [] }) => {
         group.appendChild(bar);
 
         // 호버 이벤트
-        group.addEventListener("mouseenter", () => {
+        group.addEventListener("mouseenter", (event) => {
           bar.setAttribute("opacity", "0.8");
-        });
 
-        group.addEventListener("mouseleave", () => {
-          bar.setAttribute("opacity", "1");
+          // 툴팁 생성
+          const tooltip = document.createElement("div");
+          tooltip.setAttribute("class", "gantt-tooltip");
+          tooltip.style.cssText = `
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: Arial, sans-serif;
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            max-width: 250px;
+          `;
+
+          const startDate = item.start.format("YYYY-MM-DD");
+          const endDate = item.hasEndDate
+            ? item.end.format("YYYY-MM-DD")
+            : "미정";
+          const status = item.status || "pending";
+
+          tooltip.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 4px;">${item.name}</div>
+            <div style="font-size: 11px; line-height: 1.4;">
+              <div>시작일: ${startDate}</div>
+              <div>종료일: ${endDate}</div>
+              <div>상태: ${status}</div>
+            </div>
+          `;
+
+          document.body.appendChild(tooltip);
+
+          // 툴팁 위치 설정
+          const rect = event.target.getBoundingClientRect();
+          tooltip.style.left =
+            rect.left + rect.width / 2 - tooltip.offsetWidth / 2 + "px";
+          tooltip.style.top = rect.top - tooltip.offsetHeight - 10 + "px";
+
+          // 마우스 아웃 시 툴팁 제거
+          group.addEventListener(
+            "mouseleave",
+            () => {
+              bar.setAttribute("opacity", "1");
+              if (tooltip.parentNode) {
+                tooltip.parentNode.removeChild(tooltip);
+              }
+            },
+            { once: true }
+          );
         });
 
         svg.appendChild(group);
@@ -417,15 +459,22 @@ const GanttChart = ({ issueData = [] }) => {
   }
 
   return (
-    <div style={{ width: "100%", height: "100%" }}>
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        overflow: "auto",
+        backgroundColor: "#fff",
+        border: "1px solid #e8e8e8",
+        borderRadius: "8px",
+      }}
+    >
       <svg
         ref={svgRef}
         style={{
           width: "100%",
-          height: "100%",
+          minHeight: "100%",
           backgroundColor: "#fff",
-          border: "1px solid #e8e8e8",
-          borderRadius: "8px",
         }}
       />
     </div>
