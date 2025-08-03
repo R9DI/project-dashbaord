@@ -76,20 +76,37 @@ const GanttChart = ({ issueData = [] }) => {
     const containerWidth = Math.max(container?.clientWidth || 800, 600);
     const containerHeight = Math.max(container?.clientHeight || 300, 250);
 
-    // 날짜 범위 계산
+    // 오늘 날짜를 중심으로 한 날짜 범위 계산
+    const today = dayjs();
+    const todayDate = today.toDate();
+
+    // 모든 이슈의 시작일과 종료일 수집
     const allDates = [];
     ganttData.forEach((item) => {
       allDates.push(item.start.toDate());
       allDates.push(item.end.toDate());
     });
 
-    const minDate = new Date(Math.min(...allDates));
-    const maxDate = new Date(Math.max(...allDates));
+    // 기존 최소/최대 날짜 계산
+    const originalMinDate = new Date(Math.min(...allDates));
+    const originalMaxDate = new Date(Math.max(...allDates));
 
-    // 최소 14일 범위 보장
-    const minRangeDays = 14;
-    const actualDays = dayjs(maxDate).diff(dayjs(minDate), "day") + 1;
-    const totalDays = Math.max(actualDays, minRangeDays);
+    // 오늘을 중심으로 한 범위 계산 (최소 30일)
+    const minRangeDays = 30;
+    const daysBeforeToday = Math.max(
+      dayjs(today).diff(dayjs(originalMinDate), "day"),
+      Math.floor(minRangeDays / 2)
+    );
+    const daysAfterToday = Math.max(
+      dayjs(originalMaxDate).diff(dayjs(today), "day"),
+      Math.floor(minRangeDays / 2)
+    );
+
+    // 최소/최대 날짜 재계산 (오늘 중심)
+    const minDate = dayjs(today).subtract(daysBeforeToday, "day").toDate();
+    const maxDate = dayjs(today).add(daysAfterToday, "day").toDate();
+
+    const totalDays = dayjs(maxDate).diff(dayjs(minDate), "day") + 1;
 
     // 마진 설정
     const margin = {
@@ -200,8 +217,9 @@ const GanttChart = ({ issueData = [] }) => {
           dividerLine.setAttribute("x2", xScale(nextMonth));
           dividerLine.setAttribute("y2", margin.top + finalChartHeight);
           dividerLine.setAttribute("stroke", "#333");
-          dividerLine.setAttribute("stroke-width", "2");
+          dividerLine.setAttribute("stroke-width", "1");
           dividerLine.setAttribute("stroke-dasharray", "5,3");
+          dividerLine.setAttribute("opacity", "0.7");
           svg.appendChild(dividerLine);
 
           // 월 라벨
@@ -242,6 +260,7 @@ const GanttChart = ({ issueData = [] }) => {
         todayLine.setAttribute("stroke", "#52c41a");
         todayLine.setAttribute("stroke-width", "2");
         todayLine.setAttribute("stroke-dasharray", "8,4");
+        todayLine.setAttribute("opacity", "0.7");
         svg.appendChild(todayLine);
 
         // 오늘 라벨
@@ -416,11 +435,11 @@ const GanttChart = ({ issueData = [] }) => {
       svg.appendChild(legendGroup);
     };
 
-    // 차트 요소들 그리기
+    // 차트 요소들 그리기 (점선들을 맨 위로 올리기 위해 순서 조정)
     drawGrid();
+    drawIssueBars();
     drawMonthDividers();
     drawTodayLine();
-    drawIssueBars();
   };
 
   // 리사이즈 이벤트 처리

@@ -1010,70 +1010,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           >
             {localImageUrls.length > 0 ? (
               <div>
-                {/* 이미지 그리드 */}
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                      "repeat(auto-fill, minmax(200px, 1fr))",
-                    gap: "16px",
-                    marginBottom: "16px",
-                  }}
-                >
-                  <Image.PreviewGroup>
-                    {localImageUrls.map((imageUrl, index) => (
-                      <div
-                        key={index}
-                        style={{
-                          position: "relative",
-                          border: "1px solid #e8e8e8",
-                          borderRadius: "8px",
-                          overflow: "hidden",
-                          backgroundColor: "#fff",
-                        }}
-                      >
-                        <Image
-                          src={imageUrl}
-                          alt={`이슈 이미지 ${index + 1}`}
-                          style={{
-                            width: "100%",
-                            height: "150px",
-                            objectFit: "cover",
-                            display: "block",
-                          }}
-                          fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3Ik1RnG4W+FgYxN"
-                        />
-                        <Button
-                          type="primary"
-                          danger
-                          size="small"
-                          style={{
-                            position: "absolute",
-                            top: "8px",
-                            right: "8px",
-                            borderRadius: "50%",
-                            width: "28px",
-                            height: "28px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "12px",
-                            padding: 0,
-                          }}
-                          onClick={() => {
-                            setLocalImageUrls((prev) =>
-                              prev.filter((_, i) => i !== index)
-                            );
-                          }}
-                        >
-                          ✕
-                        </Button>
-                      </div>
-                    ))}
-                  </Image.PreviewGroup>
-                </div>
-
-                {/* 추가 업로드 버튼 */}
+                {/* 이미지 그리드 (드래그 앤 드롭 가능) */}
                 <Upload.Dragger
                   name="image"
                   accept="image/*"
@@ -1105,33 +1042,69 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                     border: "2px dashed #d9d9d9",
                     borderRadius: "8px",
                     padding: "16px",
-                    textAlign: "center",
                     backgroundColor: "#fafafa",
                     transition: "all 0.3s",
                   }}
                 >
-                  <div style={{ padding: "12px" }}>
-                    <div style={{ fontSize: "24px", marginBottom: "8px" }}>
-                      ➕
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "#333",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      추가 이미지 업로드
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#666",
-                      }}
-                    >
-                      클릭하거나 드래그하여 추가
-                    </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(200px, 1fr))",
+                      gap: "16px",
+                    }}
+                  >
+                    <Image.PreviewGroup>
+                      {localImageUrls.map((imageUrl, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            position: "relative",
+                            border: "1px solid #e8e8e8",
+                            borderRadius: "8px",
+                            overflow: "hidden",
+                            backgroundColor: "#fff",
+                          }}
+                        >
+                          <Image
+                            src={imageUrl}
+                            alt={`이슈 이미지 ${index + 1}`}
+                            style={{
+                              width: "100%",
+                              height: "150px",
+                              objectFit: "cover",
+                              display: "block",
+                            }}
+                            fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3Ik1RnG4W+FgYxN"
+                          />
+                          <Button
+                            type="primary"
+                            danger
+                            size="small"
+                            style={{
+                              position: "absolute",
+                              top: "8px",
+                              right: "8px",
+                              borderRadius: "50%",
+                              width: "28px",
+                              height: "28px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "12px",
+                              padding: 0,
+                            }}
+                            onClick={() => {
+                              setLocalImageUrls((prev) =>
+                                prev.filter((_, i) => i !== index)
+                              );
+                            }}
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      ))}
+                    </Image.PreviewGroup>
                   </div>
                 </Upload.Dragger>
               </div>
@@ -1224,96 +1197,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           >
             {localFileUrls.length > 0 ? (
               <div>
-                {/* 파일 목록 */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "12px",
-                    marginBottom: "16px",
-                  }}
-                >
-                  {localFileUrls.map((fileUrl, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "12px",
-                        backgroundColor: "#fff",
-                        border: "1px solid #e8e8e8",
-                        borderRadius: "6px",
-                        gap: "12px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px",
-                          flex: 1,
-                        }}
-                      >
-                        <span style={{ fontSize: "20px", color: "#1890ff" }}>
-                          📄
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            color: "#333",
-                            wordBreak: "break-all",
-                          }}
-                        >
-                          {fileUrl.name || `파일 ${index + 1}`}
-                        </span>
-                      </div>
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <Button
-                          type="link"
-                          size="small"
-                          onClick={() => {
-                            // 파일 다운로드
-                            const link = document.createElement("a");
-                            link.href = fileUrl;
-                            link.download = fileUrl.name || `파일_${index + 1}`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                          }}
-                          style={{ padding: "4px 8px" }}
-                        >
-                          📥 다운로드
-                        </Button>
-                        <Button
-                          type="primary"
-                          danger
-                          size="small"
-                          onClick={() => {
-                            setLocalFileUrls((prev) =>
-                              prev.filter((_, i) => i !== index)
-                            );
-                          }}
-                          style={{
-                            borderRadius: "50%",
-                            width: "28px",
-                            height: "28px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "12px",
-                            padding: 0,
-                          }}
-                        >
-                          ✕
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* 추가 업로드 버튼 */}
+                {/* 파일 목록 (드래그 앤 드롭 가능) */}
                 <Upload.Dragger
                   name="file"
                   accept="*/*"
@@ -1345,33 +1229,96 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                     border: "2px dashed #d9d9d9",
                     borderRadius: "8px",
                     padding: "16px",
-                    textAlign: "center",
                     backgroundColor: "#fafafa",
                     transition: "all 0.3s",
                   }}
                 >
-                  <div style={{ padding: "12px" }}>
-                    <div style={{ fontSize: "24px", marginBottom: "8px" }}>
-                      ➕
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: "600",
-                        color: "#333",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      추가 파일 업로드
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#666",
-                      }}
-                    >
-                      클릭하거나 드래그하여 추가
-                    </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                    }}
+                  >
+                    {localFileUrls.map((fileUrl, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "12px",
+                          backgroundColor: "#fff",
+                          border: "1px solid #e8e8e8",
+                          borderRadius: "6px",
+                          gap: "12px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            flex: 1,
+                          }}
+                        >
+                          <span style={{ fontSize: "20px", color: "#1890ff" }}>
+                            📄
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "14px",
+                              fontWeight: "500",
+                              color: "#333",
+                              wordBreak: "break-all",
+                            }}
+                          >
+                            {fileUrl.name || `파일 ${index + 1}`}
+                          </span>
+                        </div>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <Button
+                            type="link"
+                            size="small"
+                            onClick={() => {
+                              // 파일 다운로드
+                              const link = document.createElement("a");
+                              link.href = fileUrl;
+                              link.download =
+                                fileUrl.name || `파일_${index + 1}`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}
+                            style={{ padding: "4px 8px" }}
+                          >
+                            📥 다운로드
+                          </Button>
+                          <Button
+                            type="primary"
+                            danger
+                            size="small"
+                            onClick={() => {
+                              setLocalFileUrls((prev) =>
+                                prev.filter((_, i) => i !== index)
+                              );
+                            }}
+                            style={{
+                              borderRadius: "50%",
+                              width: "28px",
+                              height: "28px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "12px",
+                              padding: 0,
+                            }}
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </Upload.Dragger>
               </div>
