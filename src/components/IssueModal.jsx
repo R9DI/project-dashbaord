@@ -2,14 +2,9 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Modal,
   Button,
-  Upload,
-  DatePicker,
-  Image,
   Tag,
   Table,
   Tabs,
-  Input,
-  Select,
   Drawer,
   Card,
   Space,
@@ -21,14 +16,14 @@ import {
   InputNumber,
   message,
   Collapse,
+  Image,
 } from "antd";
 import GanttChart from "./GanttChart.jsx";
 import GanttLegend from "./GanttLegend.jsx";
+import DrawerContent from "./DrawerContent.jsx";
 import { AgGridReact } from "ag-grid-react";
 import { UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
 import "ag-grid-community/dist/styles/ag-grid.css";
 import "ag-grid-community/dist/styles/ag-theme-alpine.css";
 import { PlusOutlined } from "@ant-design/icons";
@@ -57,9 +52,6 @@ const IssueModal = ({ isVisible, onClose, data }) => {
   const [isModalVisible, setIsModalVisible] = useState(isVisible);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-  const [issueContent, setIssueContent] = useState("");
-  const [summaryContent, setSummaryContent] = useState("");
-  const [currentStatus, setCurrentStatus] = useState("pending");
   const drawerRef = useRef(null);
 
   // props 변경 감지
@@ -84,14 +76,16 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 detail: localData.issueContent,
                 summary: localData.summaryContent,
                 status: localData.currentStatus,
-                img: localData.imageUrl, // 이미지 URL 업데이트
-                file: localData.fileUrl, // 첨부파일 URL 업데이트
+                img: localData.imageUrls, // 이미지 URL 배열 업데이트
+                file: localData.fileUrls, // 첨부파일 URL 배열 업데이트
                 start: localData.startDate, // 시작일 업데이트
                 end: localData.endDate, // 종료일 업데이트
               }
             : row
         )
       );
+      message.success("변경사항이 저장되었습니다!");
+      setIsDrawerVisible(false);
     }
   };
 
@@ -246,15 +240,6 @@ const IssueModal = ({ isVisible, onClose, data }) => {
   const closeDrawer = () => {
     setIsDrawerVisible(false);
   };
-
-  // 선택된 행이 변경될 때 상태 업데이트
-  useEffect(() => {
-    if (selectedRow) {
-      setIssueContent(selectedRow.detail || "");
-      setSummaryContent(selectedRow.summary || "");
-      setCurrentStatus(selectedRow.status || "pending");
-    }
-  }, [selectedRow]);
 
   const addNewIssue = () => {
     const newId = Math.max(...rowData.map((row) => row.id), 0) + 1;
@@ -746,688 +731,6 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     },
   ];
 
-  // 선택된 행의 상세 정보 컴포넌트
-  const SelectedRowDetail = React.forwardRef(({ rowData }, ref) => {
-    const [localIssueContent, setLocalIssueContent] = useState(
-      rowData?.detail || ""
-    );
-    const [localSummaryContent, setLocalSummaryContent] = useState(
-      rowData?.summary || ""
-    );
-    const [localCurrentStatus, setLocalCurrentStatus] = useState(
-      rowData?.status || "pending"
-    );
-    const [localImageUrls, setLocalImageUrls] = useState(
-      rowData?.img
-        ? Array.isArray(rowData.img)
-          ? rowData.img
-          : [rowData.img]
-        : []
-    );
-    const [localFileUrls, setLocalFileUrls] = useState(
-      rowData?.file
-        ? Array.isArray(rowData.file)
-          ? rowData.file
-          : [rowData.file]
-        : []
-    );
-    const [localStartDate, setLocalStartDate] = useState(rowData?.start || "");
-    const [localEndDate, setLocalEndDate] = useState(rowData?.end || "");
-
-    // rowData가 변경될 때 로컬 상태 업데이트
-    useEffect(() => {
-      setLocalIssueContent(rowData?.detail || "");
-      setLocalSummaryContent(rowData?.summary || "");
-      setLocalCurrentStatus(rowData?.status || "pending");
-      setLocalImageUrls(
-        rowData?.img
-          ? Array.isArray(rowData.img)
-            ? rowData.img
-            : [rowData.img]
-          : []
-      );
-      setLocalFileUrls(
-        rowData?.file
-          ? Array.isArray(rowData.file)
-            ? rowData.file
-            : [rowData.file]
-          : []
-      );
-      setLocalStartDate(rowData?.start || "");
-      setLocalEndDate(rowData?.end || "");
-    }, [rowData]);
-
-    // ref를 통해 로컬 데이터를 외부로 전달
-    React.useImperativeHandle(ref, () => ({
-      getLocalData: () => ({
-        issueContent: localIssueContent,
-        summaryContent: localSummaryContent,
-        currentStatus: localCurrentStatus,
-        imageUrl: localImageUrls, // 이미지 URL 배열 전달
-        fileUrl: localFileUrls, // 첨부파일 URL 배열 전달
-        startDate: localStartDate, // 시작일 전달
-        endDate: localEndDate, // 종료일 전달
-      }),
-    }));
-
-    if (!rowData) {
-      return (
-        <div
-          style={{
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#999",
-            fontSize: "16px",
-            backgroundColor: "#fafafa",
-            border: "1px solid #e8e8e8",
-            borderRadius: "8px",
-          }}
-        >
-          📋 이슈를 선택하면 상세 정보를 편집할 수 있습니다
-        </div>
-      );
-    }
-
-    return (
-      <div
-        style={{
-          height: "100%",
-          padding: "20px",
-          backgroundColor: "#fff",
-          border: "1px solid #e8e8e8",
-          borderRadius: "8px",
-          overflow: "auto",
-        }}
-      >
-        {/* 상태와 Summary 영역 */}
-        <div style={{ marginBottom: "24px" }}>
-          <div
-            style={{ display: "flex", gap: "20px", alignItems: "flex-start" }}
-          >
-            {/* 상태 선택 */}
-            <div style={{ flex: "0 0 150px" }}>
-              <h3
-                style={{
-                  margin: "0 0 12px 0",
-                  color: "#333",
-                  fontSize: "16px",
-                  fontWeight: "600",
-                }}
-              >
-                📊 상태
-              </h3>
-              <Select
-                value={localCurrentStatus}
-                onChange={(value) => setLocalCurrentStatus(value)}
-                style={{ width: "100%" }}
-                size="large"
-                options={[
-                  { value: "pending", label: "대기중" },
-                  { value: "in-progress", label: "진행중" },
-                  { value: "completed", label: "완료" },
-                  { value: "blocked", label: "차단됨" },
-                ]}
-              />
-            </div>
-
-            {/* Summary 입력 */}
-            <div style={{ flex: 1 }}>
-              <h3
-                style={{
-                  margin: "0 0 12px 0",
-                  color: "#333",
-                  fontSize: "16px",
-                  fontWeight: "600",
-                }}
-              >
-                📝 Summary
-              </h3>
-              <Input
-                value={localSummaryContent}
-                onChange={(e) => setLocalSummaryContent(e.target.value)}
-                placeholder="이슈에 대한 간단한 요약을 입력하세요..."
-                style={{ width: "100%" }}
-                size="large"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* 날짜 설정 영역 */}
-        <div style={{ marginBottom: "24px" }}>
-          <h3
-            style={{
-              margin: "0 0 12px 0",
-              color: "#333",
-              fontSize: "16px",
-              fontWeight: "600",
-            }}
-          >
-            📅 날짜 설정
-          </h3>
-          <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "#666",
-                  marginBottom: "8px",
-                  fontWeight: "bold",
-                }}
-              >
-                시작일
-              </div>
-              <DatePicker
-                value={localStartDate ? dayjs(localStartDate) : null}
-                onChange={(date, dateString) => {
-                  setLocalStartDate(dateString);
-                }}
-                format="YYYY-MM-DD"
-                style={{ width: "100%" }}
-                size="large"
-                placeholder="시작일 선택"
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  fontSize: "12px",
-                  color: "#666",
-                  marginBottom: "8px",
-                  fontWeight: "bold",
-                }}
-              >
-                종료일
-              </div>
-              <DatePicker
-                value={localEndDate ? dayjs(localEndDate) : null}
-                onChange={(date, dateString) => {
-                  setLocalEndDate(dateString);
-                }}
-                format="YYYY-MM-DD"
-                style={{ width: "100%" }}
-                size="large"
-                placeholder="종료일 선택"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Issue 상세내용 리치 에디터 */}
-        <div style={{ marginBottom: "24px" }}>
-          <h3
-            style={{
-              margin: "0 0 12px 0",
-              color: "#333",
-              fontSize: "16px",
-              fontWeight: "600",
-            }}
-          >
-            📋 Issue 상세내용
-          </h3>
-          <div
-            style={{
-              border: "1px solid #d9d9d9",
-              borderRadius: "6px",
-              overflow: "hidden",
-            }}
-          >
-            <ReactQuill
-              theme="snow"
-              value={localIssueContent}
-              onChange={setLocalIssueContent}
-              modules={quillModules}
-              formats={quillFormats}
-              placeholder="이슈에 대한 상세 내용을 입력하세요..."
-              style={{ height: "200px" }}
-            />
-          </div>
-        </div>
-
-        {/* 첨부 이미지 영역 */}
-        <div style={{ marginBottom: "24px" }}>
-          <h3
-            style={{
-              margin: "0 0 12px 0",
-              color: "#333",
-              fontSize: "16px",
-              fontWeight: "600",
-            }}
-          >
-            🖼️ 첨부 이미지
-          </h3>
-          <div
-            style={{
-              border: "2px dashed #d9d9d9",
-              borderRadius: "8px",
-              padding: "20px",
-              textAlign: "center",
-              backgroundColor: "#fafafa",
-              transition: "all 0.3s",
-            }}
-          >
-            {localImageUrls.length > 0 ? (
-              <div>
-                {/* 이미지 그리드 (드래그 앤 드롭 가능) */}
-                <Upload.Dragger
-                  name="image"
-                  accept="image/*"
-                  showUploadList={false}
-                  beforeUpload={(file) => {
-                    // 파일 크기 제한 (5MB)
-                    const isLt5M = file.size / 1024 / 1024 < 5;
-                    if (!isLt5M) {
-                      message.error("이미지는 5MB보다 작아야 합니다!");
-                      return false;
-                    }
-
-                    // 이미지 파일인지 확인
-                    if (!file.type.startsWith("image/")) {
-                      message.error("이미지 파일만 업로드 가능합니다!");
-                      return false;
-                    }
-
-                    // 이미지 URL을 로컬 상태에 추가
-                    const uploadedImageUrl = URL.createObjectURL(file);
-                    setLocalImageUrls((prev) => [...prev, uploadedImageUrl]);
-
-                    message.success(
-                      `${file.name} 이미지가 성공적으로 추가되었습니다.`
-                    );
-                    return false; // 자동 업로드 방지
-                  }}
-                  style={{
-                    border: "2px dashed #d9d9d9",
-                    borderRadius: "8px",
-                    padding: "16px",
-                    backgroundColor: "#fafafa",
-                    transition: "all 0.3s",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fill, minmax(200px, 1fr))",
-                      gap: "16px",
-                    }}
-                  >
-                    <Image.PreviewGroup>
-                      {localImageUrls.map((imageUrl, index) => (
-                        <div
-                          key={index}
-                          style={{
-                            position: "relative",
-                            border: "1px solid #e8e8e8",
-                            borderRadius: "8px",
-                            overflow: "hidden",
-                            backgroundColor: "#fff",
-                          }}
-                        >
-                          <Image
-                            src={imageUrl}
-                            alt={`이슈 이미지 ${index + 1}`}
-                            style={{
-                              width: "100%",
-                              height: "150px",
-                              objectFit: "cover",
-                              display: "block",
-                            }}
-                            fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3Ik1RnG4W+FgYxN"
-                          />
-                          <Button
-                            type="primary"
-                            danger
-                            size="small"
-                            style={{
-                              position: "absolute",
-                              top: "8px",
-                              right: "8px",
-                              borderRadius: "50%",
-                              width: "28px",
-                              height: "28px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "12px",
-                              padding: 0,
-                            }}
-                            onClick={() => {
-                              setLocalImageUrls((prev) =>
-                                prev.filter((_, i) => i !== index)
-                              );
-                            }}
-                          >
-                            ✕
-                          </Button>
-                        </div>
-                      ))}
-                    </Image.PreviewGroup>
-                  </div>
-                </Upload.Dragger>
-              </div>
-            ) : (
-              <Upload.Dragger
-                name="image"
-                accept="image/*"
-                showUploadList={false}
-                beforeUpload={(file) => {
-                  // 파일 크기 제한 (5MB)
-                  const isLt5M = file.size / 1024 / 1024 < 5;
-                  if (!isLt5M) {
-                    message.error("이미지는 5MB보다 작아야 합니다!");
-                    return false;
-                  }
-
-                  // 이미지 파일인지 확인
-                  if (!file.type.startsWith("image/")) {
-                    message.error("이미지 파일만 업로드 가능합니다!");
-                    return false;
-                  }
-
-                  // 이미지 URL을 로컬 상태에 저장
-                  const uploadedImageUrl = URL.createObjectURL(file);
-                  setLocalImageUrls([uploadedImageUrl]); // 로컬 상태만 업데이트
-
-                  message.success(
-                    `${file.name} 이미지가 성공적으로 업로드되었습니다.`
-                  );
-                  return false; // 자동 업로드 방지
-                }}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                }}
-              >
-                <div style={{ padding: "20px" }}>
-                  <div style={{ fontSize: "48px", marginBottom: "16px" }}>
-                    📁
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "600",
-                      marginBottom: "8px",
-                      color: "#333",
-                    }}
-                  >
-                    이미지를 드래그하여 업로드
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      color: "#666",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    또는 클릭하여 파일 선택
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#999" }}>
-                    지원 형식: JPG, PNG, GIF (최대 5MB)
-                  </div>
-                </div>
-              </Upload.Dragger>
-            )}
-          </div>
-        </div>
-
-        {/* 첨부 파일 영역 */}
-        <div style={{ marginBottom: "24px" }}>
-          <h3
-            style={{
-              margin: "0 0 12px 0",
-              color: "#333",
-              fontSize: "16px",
-              fontWeight: "600",
-            }}
-          >
-            📄 첨부 파일
-          </h3>
-          <div
-            style={{
-              border: "2px dashed #d9d9d9",
-              borderRadius: "8px",
-              padding: "20px",
-              textAlign: "center",
-              backgroundColor: "#fafafa",
-              transition: "all 0.3s",
-            }}
-          >
-            {localFileUrls.length > 0 ? (
-              <div>
-                {/* 파일 목록 (드래그 앤 드롭 가능) */}
-                <Upload.Dragger
-                  name="file"
-                  accept="*/*"
-                  showUploadList={false}
-                  beforeUpload={(file) => {
-                    // 파일 크기 제한 (10MB)
-                    const isLt10M = file.size / 1024 / 1024 < 10;
-                    if (!isLt10M) {
-                      message.error("파일은 10MB보다 작아야 합니다!");
-                      return false;
-                    }
-
-                    // 파일 URL을 로컬 상태에 추가
-                    const uploadedFileUrl = URL.createObjectURL(file);
-                    const fileWithName = {
-                      url: uploadedFileUrl,
-                      name: file.name,
-                      size: file.size,
-                      type: file.type,
-                    };
-                    setLocalFileUrls((prev) => [...prev, fileWithName]);
-
-                    message.success(
-                      `${file.name} 파일이 성공적으로 추가되었습니다.`
-                    );
-                    return false; // 자동 업로드 방지
-                  }}
-                  style={{
-                    border: "2px dashed #d9d9d9",
-                    borderRadius: "8px",
-                    padding: "16px",
-                    backgroundColor: "#fafafa",
-                    transition: "all 0.3s",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "12px",
-                    }}
-                  >
-                    {localFileUrls.map((fileUrl, index) => (
-                      <div
-                        key={index}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "12px",
-                          backgroundColor: "#fff",
-                          border: "1px solid #e8e8e8",
-                          borderRadius: "6px",
-                          gap: "12px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            flex: 1,
-                          }}
-                        >
-                          <span style={{ fontSize: "20px", color: "#1890ff" }}>
-                            📄
-                          </span>
-                          <span
-                            style={{
-                              fontSize: "14px",
-                              fontWeight: "500",
-                              color: "#333",
-                              wordBreak: "break-all",
-                            }}
-                          >
-                            {fileUrl.name || `파일 ${index + 1}`}
-                          </span>
-                        </div>
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          <Button
-                            type="link"
-                            size="small"
-                            onClick={() => {
-                              // 파일 다운로드
-                              const link = document.createElement("a");
-                              link.href = fileUrl;
-                              link.download =
-                                fileUrl.name || `파일_${index + 1}`;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                            }}
-                            style={{ padding: "4px 8px" }}
-                          >
-                            📥 다운로드
-                          </Button>
-                          <Button
-                            type="primary"
-                            danger
-                            size="small"
-                            onClick={() => {
-                              setLocalFileUrls((prev) =>
-                                prev.filter((_, i) => i !== index)
-                              );
-                            }}
-                            style={{
-                              borderRadius: "50%",
-                              width: "28px",
-                              height: "28px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "12px",
-                              padding: 0,
-                            }}
-                          >
-                            ✕
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Upload.Dragger>
-              </div>
-            ) : (
-              <Upload.Dragger
-                name="file"
-                accept="*/*"
-                showUploadList={false}
-                beforeUpload={(file) => {
-                  // 파일 크기 제한 (10MB)
-                  const isLt10M = file.size / 1024 / 1024 < 10;
-                  if (!isLt10M) {
-                    message.error("파일은 10MB보다 작아야 합니다!");
-                    return false;
-                  }
-
-                  // 파일 URL을 로컬 상태에 저장
-                  const uploadedFileUrl = URL.createObjectURL(file);
-                  const fileWithName = {
-                    url: uploadedFileUrl,
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                  };
-                  setLocalFileUrls([fileWithName]);
-
-                  message.success(
-                    `${file.name} 파일이 성공적으로 업로드되었습니다.`
-                  );
-                  return false; // 자동 업로드 방지
-                }}
-                style={{
-                  border: "none",
-                  background: "transparent",
-                }}
-              >
-                <div style={{ padding: "20px" }}>
-                  <div style={{ fontSize: "48px", marginBottom: "16px" }}>
-                    📁
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "600",
-                      marginBottom: "8px",
-                      color: "#333",
-                    }}
-                  >
-                    파일을 드래그하여 업로드
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "14px",
-                      color: "#666",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    또는 클릭하여 파일 선택
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#999" }}>
-                    모든 파일 형식 지원 (최대 10MB)
-                  </div>
-                </div>
-              </Upload.Dragger>
-            )}
-          </div>
-        </div>
-
-        {/* 저장 버튼 */}
-        <div style={{ textAlign: "center", marginTop: "20px" }}>
-          <Button
-            type="primary"
-            size="large"
-            onClick={() => {
-              // 데이터 업데이트 로직
-              setRowData((prevData) =>
-                prevData.map((row) =>
-                  row.id === rowData.id
-                    ? {
-                        ...row,
-                        detail: localIssueContent,
-                        summary: localSummaryContent,
-                        status: localCurrentStatus,
-                        img: localImageUrls, // 이미지 URL 배열 업데이트
-                        file: localFileUrls, // 첨부파일 URL 배열 업데이트
-                        start:
-                          localStartDate && localStartDate.trim() !== ""
-                            ? localStartDate
-                            : row.start, // 시작일 업데이트 (빈 값이면 기존 값 유지)
-                        end:
-                          localEndDate && localEndDate.trim() !== ""
-                            ? localEndDate
-                            : row.end, // 종료일 업데이트 (빈 값이면 기존 값 유지)
-                      }
-                    : row
-                )
-              );
-              message.success("변경사항이 저장되었습니다!");
-              // 드로워만 닫기
-              setIsDrawerVisible(false);
-            }}
-          >
-            💾 저장
-          </Button>
-        </div>
-      </div>
-    );
-  });
-
   // 현재 월과 년도 가져오기
   const getCurrentMonthYear = () => {
     const now = new Date();
@@ -1453,15 +756,6 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     setSelectedRow(params.data);
     setIsDrawerVisible(true);
   };
-
-  // 선택된 행이 변경될 때 상태 업데이트
-  useEffect(() => {
-    if (selectedRow) {
-      setIssueContent(selectedRow.detail || "");
-      setSummaryContent(selectedRow.summary || "");
-      setCurrentStatus(selectedRow.status || "pending");
-    }
-  }, [selectedRow]);
 
   return (
     <>
@@ -1708,7 +1002,11 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           },
         }}
       >
-        <SelectedRowDetail rowData={selectedRow} ref={drawerRef} />
+        <DrawerContent
+          selectedRow={selectedRow}
+          onSave={saveDrawerData}
+          ref={drawerRef}
+        />
       </Drawer>
     </>
   );
