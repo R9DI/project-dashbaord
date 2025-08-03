@@ -23,6 +23,7 @@ import {
   Collapse,
 } from "antd";
 import GanttChart from "./GanttChart.jsx";
+import GanttLegend from "./GanttLegend.jsx";
 import { AgGridReact } from "ag-grid-react";
 import { UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -258,7 +259,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
   const addNewIssue = () => {
     const newId = Math.max(...rowData.map((row) => row.id), 0) + 1;
     const today = dayjs().format("YYYY-MM-DD");
-    const nextWeek = dayjs().add(7, "day").format("YYYY-MM-DD");
+    const nextWeek = dayjs().add(7, "day").format("YYYY-MM-DD"); // 오늘부터 7일 후
 
     const newIssue = {
       id: newId,
@@ -1456,8 +1457,14 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                         status: localCurrentStatus,
                         img: localImageUrls, // 이미지 URL 배열 업데이트
                         file: localFileUrls, // 첨부파일 URL 배열 업데이트
-                        start: localStartDate, // 시작일 업데이트
-                        end: localEndDate, // 종료일 업데이트
+                        start:
+                          localStartDate && localStartDate.trim() !== ""
+                            ? localStartDate
+                            : row.start, // 시작일 업데이트 (빈 값이면 기존 값 유지)
+                        end:
+                          localEndDate && localEndDate.trim() !== ""
+                            ? localEndDate
+                            : row.end, // 종료일 업데이트 (빈 값이면 기존 값 유지)
                       }
                     : row
                 )
@@ -1535,11 +1542,13 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           top: 10,
           borderRadius: "12px",
         }}
-        bodyStyle={{
-          height: "85vh",
-          padding: "24px",
-          backgroundColor: "#fafafa",
-          overflow: "auto",
+        styles={{
+          body: {
+            height: "85vh",
+            padding: "24px",
+            backgroundColor: "#fafafa",
+            overflow: "auto",
+          },
         }}
         footer={[
           <Button
@@ -1583,8 +1592,11 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 </div>
               ),
               children: (
-                <div style={{ height: "350px", minHeight: "350px" }}>
-                  <GanttChart issueData={rowData} />
+                <div>
+                  <div style={{ height: "350px", minHeight: "350px" }}>
+                    <GanttChart issueData={rowData} />
+                  </div>
+                  <GanttLegend />
                 </div>
               ),
             },
@@ -1641,14 +1653,30 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                     rowHeight={80}
                     getRowHeight={(params) => {
                       const detail = params.data?.detail || "";
-                      const lines = detail
+                      if (!detail) return 80; // 기본 높이
+
+                      // HTML 태그를 제거하고 실제 텍스트 내용만 추출
+                      const tempDiv = document.createElement("div");
+                      tempDiv.innerHTML = detail;
+                      const plainText =
+                        tempDiv.textContent || tempDiv.innerText || "";
+
+                      // 줄 수 계산 (Rich text의 실제 내용 고려)
+                      const lines = plainText
                         .split("\n")
                         .filter((line) => line.trim() !== "");
+
                       const baseHeight = 80;
-                      const lineHeight = 16;
+                      const lineHeight = 18; // 줄 간격 조정
+                      const maxLines = 12; // 최대 줄 수 증가
+
                       // 3줄까지는 기본 높이, 4줄부터 추가 높이
-                      const extraLines = Math.max(0, lines.length - 3);
+                      const extraLines = Math.max(
+                        0,
+                        Math.min(lines.length - 3, maxLines - 3)
+                      );
                       const extraHeight = extraLines * lineHeight;
+
                       return baseHeight + extraHeight;
                     }}
                     getRowStyle={(params) => {
@@ -1720,7 +1748,12 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           setIsDrawerVisible(false);
         }}
         open={isDrawerVisible}
-        bodyStyle={{ padding: 0, height: "100%" }}
+        styles={{
+          body: {
+            padding: 0,
+            height: "100%",
+          },
+        }}
       >
         <SelectedRowDetail rowData={selectedRow} ref={drawerRef} />
       </Drawer>

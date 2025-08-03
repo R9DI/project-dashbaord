@@ -310,7 +310,11 @@ const Dashboard = () => {
           </div>
         }
         style={{ marginBottom: 16 }}
-        bodyStyle={{ padding: "16px" }}
+        styles={{
+          body: {
+            padding: "16px",
+          },
+        }}
       >
         {/* 통계 정보 */}
         <div
