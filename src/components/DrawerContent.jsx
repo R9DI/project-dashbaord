@@ -351,10 +351,11 @@ const DrawerContent = forwardRef(({ selectedRow, onSave }, ref) => {
       </div>
 
       {/* 첨부 파일 영역 */}
+      {/* 📄 첨부 파일 */}
       <div style={{ marginBottom: "20px" }}>
         <h3
           style={{
-            margin: "0 0 12px 0",
+            marginBottom: "12px",
             color: "#333",
             fontSize: "16px",
             fontWeight: "600",
@@ -367,177 +368,118 @@ const DrawerContent = forwardRef(({ selectedRow, onSave }, ref) => {
             border: "1px solid #d9d9d9",
             borderRadius: "8px",
             padding: "16px",
-            textAlign: "center",
             backgroundColor: "#fff",
-            transition: "all 0.3s",
+            minHeight: "180px",
           }}
         >
-          {Array.isArray(localFileUrls) && localFileUrls.length > 0 ? (
-            <div>
-              {/* 파일 목록 */}
-              <Upload.Dragger
-                name="file"
-                accept="*/*"
-                showUploadList={false}
-                beforeUpload={(file) => {
-                  // 파일 크기 제한 (10MB)
-                  const isLt10M = file.size / 1024 / 1024 < 10;
-                  if (!isLt10M) {
-                    message.error("파일은 10MB보다 작아야 합니다!");
-                    return false;
-                  }
-
-                  // 파일 URL을 로컬 상태에 추가
-                  const uploadedFileUrl = URL.createObjectURL(file);
-                  const fileWithName = {
-                    url: uploadedFileUrl,
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                  };
-                  setLocalFileUrls((prev) => [...prev, fileWithName]);
-
-                  message.success(
-                    `${file.name} 파일이 성공적으로 추가되었습니다.`
-                  );
-                  return false; // 자동 업로드 방지
-                }}
+          <Upload.Dragger
+            name="file"
+            accept="*/*"
+            showUploadList={false}
+            beforeUpload={(file) => {
+              const isLt10M = file.size / 1024 / 1024 < 10;
+              if (!isLt10M) {
+                message.error("파일은 10MB보다 작아야 합니다!");
+                return false;
+              }
+              const uploadedFileUrl = URL.createObjectURL(file);
+              const fileWithName = {
+                url: uploadedFileUrl,
+                name: file.name,
+                size: file.size,
+                type: file.type,
+              };
+              setLocalFileUrls((prev) => [...prev, fileWithName]);
+              message.success(`${file.name} 파일이 업로드되었습니다.`);
+              return false;
+            }}
+            style={{ border: "none", background: "transparent" }}
+          >
+            {localFileUrls.length > 0 ? (
+              <div
                 style={{
                   display: "flex",
                   flexDirection: "column",
                   gap: "12px",
-                  border: "none",
-                  background: "transparent",
-                  minHeight: "150px",
                 }}
               >
-                {Array.isArray(localFileUrls) &&
-                  localFileUrls.map((fileUrl, index) => (
+                {localFileUrls.map((fileUrl, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "12px",
+                      border: "1px solid #eee",
+                      borderRadius: "6px",
+                    }}
+                  >
                     <div
-                      key={index}
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "12px",
-                        backgroundColor: "#fff",
-                        border: "1px solid #e8e8e8",
-                        borderRadius: "6px",
                         gap: "12px",
+                        flex: 1,
                       }}
                     >
-                      <div
+                      <span style={{ fontSize: "20px", color: "#1890ff" }}>
+                        📄
+                      </span>
+                      <span
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px",
-                          flex: 1,
+                          fontSize: "14px",
+                          fontWeight: "500",
+                          color: "#333",
+                          wordBreak: "break-all",
                         }}
                       >
-                        <span style={{ fontSize: "20px", color: "#1890ff" }}>
-                          📄
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            color: "#333",
-                            wordBreak: "break-all",
-                          }}
-                        >
-                          {fileUrl.name || `파일 ${index + 1}`}
-                        </span>
-                      </div>
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        <Button
-                          type="link"
-                          size="small"
-                          onClick={() => {
-                            // 파일 다운로드
-                            const link = document.createElement("a");
-                            link.href = fileUrl;
-                            link.download = fileUrl.name || `파일_${index + 1}`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                          }}
-                          style={{ padding: "4px 8px" }}
-                        >
-                          📥 다운로드
-                        </Button>
-                        <Button
-                          type="primary"
-                          danger
-                          size="small"
-                          onClick={() => {
-                            setLocalFileUrls((prev) =>
-                              prev.filter((_, i) => i !== index)
-                            );
-                          }}
-                          style={{
-                            borderRadius: "50%",
-                            width: "28px",
-                            height: "28px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "12px",
-                            padding: 0,
-                          }}
-                        >
-                          ✕
-                        </Button>
-                      </div>
+                        {fileUrl.name || `파일 ${index + 1}`}
+                      </span>
                     </div>
-                  ))}
-              </Upload.Dragger>
-            </div>
-          ) : (
-            <Upload.Dragger
-              name="file"
-              accept="*/*"
-              showUploadList={false}
-              beforeUpload={(file) => {
-                // 파일 크기 제한 (10MB)
-                const isLt10M = file.size / 1024 / 1024 < 10;
-                if (!isLt10M) {
-                  message.error("파일은 10MB보다 작아야 합니다!");
-                  return false;
-                }
-
-                // 파일 URL을 로컬 상태에 저장
-                const uploadedFileUrl = URL.createObjectURL(file);
-                const fileWithName = {
-                  url: uploadedFileUrl,
-                  name: file.name,
-                  size: file.size,
-                  type: file.type,
-                };
-                setLocalFileUrls((prev) => [...prev, fileWithName]);
-
-                message.success(
-                  `${file.name} 파일이 성공적으로 업로드되었습니다.`
-                );
-                return false; // 자동 업로드 방지
-              }}
-              style={{
-                border: "none",
-                background: "transparent",
-                minHeight: "150px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <div style={{ padding: "20px" }}>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <Button
+                        type="link"
+                        size="small"
+                        onClick={() => {
+                          const link = document.createElement("a");
+                          link.href = fileUrl.url || fileUrl;
+                          link.download = fileUrl.name || `file_${index + 1}`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
+                      >
+                        다운로드
+                      </Button>
+                      <Button
+                        danger
+                        size="small"
+                        style={{
+                          borderRadius: "50%",
+                          width: "28px",
+                          height: "28px",
+                          fontSize: "12px",
+                          padding: 0,
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setLocalFileUrls((prev) =>
+                            prev.filter((_, i) => i !== index)
+                          );
+                        }}
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: "center" }}>
                 <div style={{ fontSize: "48px", marginBottom: "16px" }}>📁</div>
                 <div
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    marginBottom: "8px",
-                    color: "#333",
-                  }}
+                  style={{ fontSize: "16px", fontWeight: "600", color: "#333" }}
                 >
                   파일을 드래그하여 업로드
                 </div>
@@ -554,8 +496,8 @@ const DrawerContent = forwardRef(({ selectedRow, onSave }, ref) => {
                   모든 파일 형식 지원 (최대 10MB)
                 </div>
               </div>
-            </Upload.Dragger>
-          )}
+            )}
+          </Upload.Dragger>
         </div>
       </div>
 
