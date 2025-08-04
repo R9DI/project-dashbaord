@@ -59,6 +59,16 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     setIsModalVisible(isVisible);
   }, [isVisible]);
 
+  // 드로워가 닫힐 때 자동 저장
+  useEffect(() => {
+    if (!isDrawerVisible && selectedRow && drawerRef.current) {
+      const localData = drawerRef.current.getData();
+      if (localData) {
+        saveDrawerData(localData);
+      }
+    }
+  }, [isDrawerVisible, selectedRow]);
+
   // 모달이 닫힐 때 onClose 호출
   const handleCancel = () => {
     setIsModalVisible(false);
@@ -984,14 +994,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         }
         placement="right"
         width="66.67%"
+        maskClosable={true}
+        closable={true}
         onClose={() => {
-          // 드로워 닫을 때 자동 저장
-          if (selectedRow && drawerRef.current) {
-            const localData = drawerRef.current.getLocalData();
-            if (localData) {
-              saveDrawerData(localData);
-            }
-          }
           setIsDrawerVisible(false);
         }}
         open={isDrawerVisible}
