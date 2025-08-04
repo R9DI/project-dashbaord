@@ -11,6 +11,7 @@ import {
   Row,
   Col,
   InputNumber,
+  message,
 } from "antd";
 import {
   BarChartOutlined,
@@ -18,6 +19,7 @@ import {
   ReloadOutlined,
   SettingOutlined,
   IssuesCloseOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import "ag-grid-community/dist/styles/ag-grid.css";
 import "ag-grid-community/dist/styles/ag-theme-alpine.css";
@@ -30,6 +32,7 @@ const Dashboard = () => {
   const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
   const [isIssueModalVisible, setIsIssueModalVisible] = useState(false);
   const [selectedRowData, setSelectedRowData] = useState(null);
+  const [selectedRows, setSelectedRows] = useState([]);
   const gridRef = useRef(null);
   const [colorSettings, setColorSettings] = useState({
     inlinePassRate: { high: 90, low: 70 },
@@ -40,76 +43,96 @@ const Dashboard = () => {
     finalScore: { high: 90, low: 70 },
   });
 
+  // 랜덤 값 생성 함수
+  const generateRandomValue = (min, max) => {
+    return Math.round((Math.random() * (max - min) + min) * 100) / 100;
+  };
+
+  // 랜덤 프로젝트명 생성
+  const projectNames = [
+    "5G 네트워크 최적화",
+    "AI 기반 품질 검사",
+    "IoT 센서 데이터 분석",
+    "클라우드 마이그레이션",
+    "보안 인증 시스템",
+    "자율주행 알고리즘",
+    "블록체인 거래 시스템",
+    "머신러닝 모델 개발",
+    "모바일 앱 최적화",
+    "웹 서비스 확장",
+    "데이터베이스 성능 개선",
+    "API 게이트웨이 구축",
+    "마이크로서비스 아키텍처",
+    "DevOps 파이프라인 구축",
+    "사용자 인터페이스 개선",
+  ];
+
+  const remarks = [
+    "정상 진행 중",
+    "일정 지연 발생",
+    "테스트 완료",
+    "기술적 난제 해결 중",
+    "배포 준비 중",
+    "품질 이슈 발생",
+    "코드 리뷰 진행 중",
+    "성능 최적화 중",
+    "보안 검토 완료",
+    "사용자 테스트 진행",
+    "버그 수정 중",
+    "문서화 작업 중",
+    "팀 협업 진행",
+    "외부 의존성 업데이트",
+    "모니터링 시스템 구축",
+  ];
+
+  // 빈 행 생성
+  const generateEmptyRow = () => {
+    return {
+      id: Date.now(), // 고유 ID 생성
+      projectName: "",
+      inlinePassRate: 0,
+      elecPassRate: 0,
+      issueResponseIndex: 0,
+      wipAchievementRate: 0,
+      deadlineAchievementRate: 0,
+      finalScore: 0,
+      remark: "",
+    };
+  };
+
   // 샘플 데이터 생성
   const generateSampleData = () => {
-    return [
-      {
-        id: 1,
-        projectName: "5G 네트워크 최적화",
-        inlinePassRate: 0.95,
-        elecPassRate: 0.88,
-        issueResponseIndex: 0.92,
-        wipAchievementRate: 0.87,
-        deadlineAchievementRate: 0.85,
-        finalScore: 0.95 * 0.88 * 0.92 * 0.87 * 0.85,
-        remark: "정상 진행 중",
-      },
-      {
-        id: 2,
-        projectName: "AI 기반 품질 검사",
-        inlinePassRate: 0.78,
-        elecPassRate: 0.82,
-        issueResponseIndex: 0.75,
-        wipAchievementRate: 0.8,
-        deadlineAchievementRate: 0.72,
-        finalScore: 0.78 * 0.82 * 0.75 * 0.8 * 0.72,
-        remark: "일정 지연 발생",
-      },
-      {
-        id: 3,
-        projectName: "IoT 센서 데이터 분석",
-        inlinePassRate: 0.92,
-        elecPassRate: 0.95,
-        issueResponseIndex: 0.89,
-        wipAchievementRate: 0.93,
-        deadlineAchievementRate: 0.9,
-        finalScore: 0.92 * 0.95 * 0.89 * 0.93 * 0.9,
-        remark: "테스트 완료",
-      },
-      {
-        id: 4,
-        projectName: "클라우드 마이그레이션",
-        inlinePassRate: 0.85,
-        elecPassRate: 0.79,
-        issueResponseIndex: 0.83,
-        wipAchievementRate: 0.76,
-        deadlineAchievementRate: 0.78,
-        finalScore: 0.85 * 0.79 * 0.83 * 0.76 * 0.78,
-        remark: "기술적 난제 해결 중",
-      },
-      {
-        id: 5,
-        projectName: "보안 인증 시스템",
-        inlinePassRate: 0.98,
-        elecPassRate: 0.96,
-        issueResponseIndex: 0.97,
-        wipAchievementRate: 0.95,
-        deadlineAchievementRate: 0.94,
-        finalScore: 0.98 * 0.96 * 0.97 * 0.95 * 0.94,
-        remark: "배포 준비 중",
-      },
-      {
-        id: 6,
-        projectName: "자율주행 알고리즘",
-        inlinePassRate: 0.72,
-        elecPassRate: 0.68,
-        issueResponseIndex: 0.7,
-        wipAchievementRate: 0.65,
-        deadlineAchievementRate: 0.6,
-        finalScore: 0.72 * 0.68 * 0.7 * 0.65 * 0.6,
-        remark: "품질 이슈 발생",
-      },
-    ];
+    const data = [];
+    const numProjects = Math.floor(Math.random() * 5) + 4; // 4-8개 프로젝트
+
+    for (let i = 1; i <= numProjects; i++) {
+      const inlinePassRate = generateRandomValue(0.6, 0.98);
+      const elecPassRate = generateRandomValue(0.6, 0.98);
+      const issueResponseIndex = generateRandomValue(0.6, 0.98);
+      const wipAchievementRate = generateRandomValue(0.6, 0.98);
+      const deadlineAchievementRate = generateRandomValue(0.6, 0.98);
+      const finalScore =
+        inlinePassRate *
+        elecPassRate *
+        issueResponseIndex *
+        wipAchievementRate *
+        deadlineAchievementRate;
+
+      data.push({
+        id: i,
+        projectName:
+          projectNames[Math.floor(Math.random() * projectNames.length)],
+        inlinePassRate,
+        elecPassRate,
+        issueResponseIndex,
+        wipAchievementRate,
+        deadlineAchievementRate,
+        finalScore,
+        remark: remarks[Math.floor(Math.random() * remarks.length)],
+      });
+    }
+
+    return data;
   };
 
   // 셀 스타일 결정 함수
@@ -139,14 +162,23 @@ const Dashboard = () => {
     if (compareValue >= highThreshold) {
       return {
         backgroundColor: field === "finalScore" ? "#4CAF50" : "#E8F5E8",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       };
     } else if (compareValue >= lowThreshold) {
       return {
         backgroundColor: field === "finalScore" ? "#FF9800" : "#FFF3E0",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       };
     } else {
       return {
         backgroundColor: field === "finalScore" ? "#F44336" : "#FFEBEE",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       };
     }
   };
@@ -162,6 +194,9 @@ const Dashboard = () => {
         cellStyle: {
           fontWeight: "bold",
           backgroundColor: "#f8f9fa",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         },
       },
       {
@@ -243,6 +278,11 @@ const Dashboard = () => {
         headerName: "Remark",
         field: "remark",
         width: 150,
+        cellStyle: {
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        },
       },
     ],
     [colorSettings]
@@ -253,6 +293,18 @@ const Dashboard = () => {
     console.log("Settings saved:", values);
     setColorSettings(values);
     setIsSettingsModalVisible(false);
+  };
+
+  // 새 데이터 추가
+  const addNewData = () => {
+    const newRow = generateEmptyRow();
+    setRowData((prevData) => [...prevData, newRow]);
+  };
+
+  // 단일 행 삭제
+  const deleteRow = (rowId) => {
+    setRowData((prevData) => prevData.filter((row) => row.id !== rowId));
+    message.success("행이 삭제되었습니다.");
   };
 
   // 데이터 새로고침
@@ -365,12 +417,23 @@ const Dashboard = () => {
         {/* 액션 버튼 */}
         <div style={{ marginBottom: "16px" }}>
           <Space>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={refreshData}
-            >
+            <Button type="primary" icon={<PlusOutlined />} onClick={addNewData}>
               새 데이터 생성
+            </Button>
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => {
+                if (selectedRows.length === 0) {
+                  message.warning("삭제할 행을 선택해주세요.");
+                  return;
+                }
+                deleteRow(selectedRows[0].id);
+                setSelectedRows([]);
+              }}
+              disabled={selectedRows.length === 0}
+            >
+              선택 행 삭제
             </Button>
             <Button icon={<ReloadOutlined />} onClick={refreshData}>
               데이터 새로고침
@@ -402,6 +465,20 @@ const Dashboard = () => {
             paginationPageSize={10}
             rowHeight={60}
             ref={gridRef}
+            rowSelection="single"
+            suppressRowClickSelection={false}
+            onSelectionChanged={(event) => {
+              const selectedNodes = event.api.getSelectedNodes();
+              const selectedData = selectedNodes.map((node) => node.data);
+              setSelectedRows(selectedData);
+            }}
+            defaultColDef={{
+              cellStyle: {
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              },
+            }}
           />
         </div>
       </Card>

@@ -826,12 +826,46 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           </Button>,
         ]}
       >
-        <Collapse
-          defaultActiveKey={["2"]} // 기본적으로 전체 이슈 목록이 열려있음
-          items={[
-            {
-              key: "1",
-              label: (
+        <Collapse defaultActiveKey={["2"]}>
+          <Collapse.Panel
+            key="1"
+            header={
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  fontWeight: "600",
+                }}
+              >
+                📊 Issue Schedule
+              </div>
+            }
+          >
+            <div>
+              <div
+                style={{
+                  height: `${Math.max(rowData.length * 28 + 80, 180)}px`,
+                  minHeight: "180px",
+                  maxHeight: "400px",
+                }}
+              >
+                <GanttChart issueData={rowData} />
+              </div>
+              <GanttLegend />
+            </div>
+          </Collapse.Panel>
+          <Collapse.Panel
+            key="2"
+            header={
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
                 <div
                   style={{
                     display: "flex",
@@ -840,145 +874,106 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                     fontWeight: "600",
                   }}
                 >
-                  📊 Issue Schedule
+                  📋 전체 이슈 목록 ({rowData.length}개)
                 </div>
-              ),
-              children: (
-                <div>
-                  <div
-                    style={{
-                      height: `${Math.max(rowData.length * 28 + 80, 180)}px`,
-                      minHeight: "180px",
-                      maxHeight: "400px",
-                    }}
-                  >
-                    <GanttChart issueData={rowData} />
-                  </div>
-                  <GanttLegend />
-                </div>
-              ),
-            },
-            {
-              key: "2",
-              label: (
-                <div
+                <Button
+                  type="primary"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Collapse 토글 방지
+                    addNewIssue();
+                  }}
+                  icon={<span>➕</span>}
+                  size="small"
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "space-between",
-                    width: "100%",
+                    gap: "4px",
+                    fontWeight: "600",
+                    borderRadius: "6px",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    📋 전체 이슈 목록 ({rowData.length}개)
-                  </div>
-                  <Button
-                    type="primary"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Collapse 토글 방지
-                      addNewIssue();
-                    }}
-                    icon={<span>➕</span>}
-                    size="small"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      fontWeight: "600",
-                      borderRadius: "6px",
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                    }}
-                  >
-                    새 이슈 추가
-                  </Button>
-                </div>
-              ),
-              children: (
-                <div
-                  className="ag-theme-alpine"
-                  style={{
-                    height: "calc(90vh - 250px)",
-                    minHeight: "500px",
-                    width: "100%",
-                  }}
-                >
-                  <AgGridReact
-                    columnDefs={columnDefs}
-                    rowData={rowData}
-                    rowHeight={80}
-                    getRowHeight={(params) => {
-                      const detail = params.data?.detail || "";
-                      if (!detail) return 80; // 기본 높이
+                  새 이슈 추가
+                </Button>
+              </div>
+            }
+          >
+            <div
+              className="ag-theme-alpine"
+              style={{
+                height: "calc(90vh - 250px)",
+                minHeight: "500px",
+                width: "100%",
+              }}
+            >
+              <AgGridReact
+                columnDefs={columnDefs}
+                rowData={rowData}
+                rowHeight={80}
+                getRowHeight={(params) => {
+                  const detail = params.data?.detail || "";
+                  if (!detail) return 80; // 기본 높이
 
-                      // HTML 태그를 제거하고 실제 텍스트 내용만 추출
-                      const tempDiv = document.createElement("div");
-                      tempDiv.innerHTML = detail;
-                      const plainText =
-                        tempDiv.textContent || tempDiv.innerText || "";
+                  // HTML 태그를 제거하고 실제 텍스트 내용만 추출
+                  const tempDiv = document.createElement("div");
+                  tempDiv.innerHTML = detail;
+                  const plainText =
+                    tempDiv.textContent || tempDiv.innerText || "";
 
-                      // 줄 수 계산 (Rich text의 실제 내용 고려)
-                      const lines = plainText
-                        .split("\n")
-                        .filter((line) => line.trim() !== "");
+                  // 줄 수 계산 (Rich text의 실제 내용 고려)
+                  const lines = plainText
+                    .split("\n")
+                    .filter((line) => line.trim() !== "");
 
-                      const baseHeight = 80;
-                      const lineHeight = 18; // 줄 간격 조정
-                      const maxLines = 12; // 최대 줄 수 증가
+                  const baseHeight = 80;
+                  const lineHeight = 18; // 줄 간격 조정
+                  const maxLines = 12; // 최대 줄 수 증가
 
-                      // 3줄까지는 기본 높이, 4줄부터 추가 높이
-                      const extraLines = Math.max(
-                        0,
-                        Math.min(lines.length - 3, maxLines - 3)
-                      );
-                      const extraHeight = extraLines * lineHeight;
+                  // 3줄까지는 기본 높이, 4줄부터 추가 높이
+                  const extraLines = Math.max(
+                    0,
+                    Math.min(lines.length - 3, maxLines - 3)
+                  );
+                  const extraHeight = extraLines * lineHeight;
 
-                      return baseHeight + extraHeight;
-                    }}
-                    getRowStyle={(params) => {
-                      // 이번 달에 진행 중인 항목은 하얀색 배경
-                      if (isCurrentMonthActive(params.data)) {
-                        return { backgroundColor: "#ffffff" };
-                      }
-                      // 완료된 과거 항목은 회색 배경
-                      return { backgroundColor: "#f5f5f5" };
-                    }}
-                    defaultColDef={{
-                      resizable: true,
-                      sortable: true,
-                      filter: true,
-                      editable: false,
-                      cellStyle: {
-                        display: "flex",
-                        alignItems: "flex-start",
-                        justifyContent: "flex-start",
-                        padding: "4px",
-                      },
-                    }}
-                    pagination={true}
-                    paginationPageSize={10}
-                    suppressRowClickSelection={false}
-                    rowSelection="single"
-                    animateRows={true}
-                    onRowDoubleClicked={onRowClicked}
-                    // 기본 정렬 설정
-                    defaultSortModel={[
-                      { colId: "end", sort: "desc" }, // 종료일 기준 내림차순 (늦을수록 위로, 없으면 최상단)
-                      { colId: "start", sort: "desc" }, // 시작일 기준 내림차순 (늦을수록 위로)
-                      { colId: "category", sort: "asc" }, // 카테고리 기준 오름차순
-                    ]}
-                  />
-                </div>
-              ),
-            },
-          ]}
-        />
+                  return baseHeight + extraHeight;
+                }}
+                getRowStyle={(params) => {
+                  // 이번 달에 진행 중인 항목은 하얀색 배경
+                  if (isCurrentMonthActive(params.data)) {
+                    return { backgroundColor: "#ffffff" };
+                  }
+                  // 완료된 과거 항목은 회색 배경
+                  return { backgroundColor: "#f5f5f5" };
+                }}
+                defaultColDef={{
+                  resizable: true,
+                  sortable: true,
+                  filter: true,
+                  editable: false,
+                  cellStyle: {
+                    display: "flex",
+                    alignItems: "flex-start",
+                    justifyContent: "flex-start",
+                    padding: "4px",
+                  },
+                }}
+                pagination={true}
+                paginationPageSize={10}
+                suppressRowClickSelection={false}
+                rowSelection="single"
+                animateRows={true}
+                onRowDoubleClicked={onRowClicked}
+                // 기본 정렬 설정
+                defaultSortModel={[
+                  { colId: "end", sort: "desc" }, // 종료일 기준 내림차순 (늦을수록 위로, 없으면 최상단)
+                  { colId: "start", sort: "desc" }, // 시작일 기준 내림차순 (늦을수록 위로)
+                  { colId: "category", sort: "asc" }, // 카테고리 기준 오름차순
+                ]}
+              />
+            </div>
+          </Collapse.Panel>
+        </Collapse>
       </Modal>
 
       {/* Drawer for 상세 정보 편집 */}
