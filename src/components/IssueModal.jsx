@@ -902,7 +902,11 @@ const IssueModal = ({ isVisible, onClose, data }) => {
               children: (
                 <div
                   className="ag-theme-alpine"
-                  style={{ height: "600px", minHeight: "600px", width: "100%" }}
+                  style={{
+                    height: "calc(85vh - 200px)",
+                    minHeight: "500px",
+                    width: "100%",
+                  }}
                 >
                   <AgGridReact
                     columnDefs={columnDefs}
