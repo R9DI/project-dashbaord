@@ -792,11 +792,12 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         style={{
           top: 10,
           borderRadius: "12px",
+          maxHeight: "90vh",
         }}
         styles={{
           body: {
-            height: "85vh",
-            padding: "24px",
+            height: "calc(90vh - 120px)",
+            padding: "0px",
             backgroundColor: "#fafafa",
             overflow: "auto",
           },
@@ -903,7 +904,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 <div
                   className="ag-theme-alpine"
                   style={{
-                    height: "calc(85vh - 200px)",
+                    height: "calc(90vh - 250px)",
                     minHeight: "500px",
                     width: "100%",
                   }}
