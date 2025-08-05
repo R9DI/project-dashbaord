@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { AgGridReact } from "ag-grid-react";
+import { ModuleRegistry } from "ag-grid-community";
+import { ClientSideRowModelModule } from "ag-grid-community";
 import {
   Card,
   Button,
@@ -21,8 +23,11 @@ import {
   IssuesCloseOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
-import "ag-grid-community/dist/styles/ag-grid.css";
-import "ag-grid-community/dist/styles/ag-theme-alpine.css";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
+
+// Register the required feature modules with the Grid
+ModuleRegistry.registerModules([ClientSideRowModelModule]);
 import IssueModal from "./IssueModal";
 
 const { Text } = Typography;
@@ -136,50 +141,20 @@ const Dashboard = () => {
   };
 
   // 셀 스타일 결정 함수
-  const getCellStyle = (params) => {
+  const getCellClass = (params) => {
     const field = params.column.colId;
     const value = params.value;
     const settings = colorSettings[field];
-
-    console.log("getCellStyle called:", { field, value, settings });
-
-    if (!settings) return {};
-
-    // 퍼센트 기준값을 소수값으로 변환
+    if (!settings) return "";
     const highThreshold = settings.high / 100;
     const lowThreshold = settings.low / 100;
-
-    // 모든 값이 소수값이므로 그대로 비교
     const compareValue = value;
-
-    console.log("Color calculation:", {
-      field,
-      compareValue,
-      highThreshold,
-      lowThreshold,
-    });
-
     if (compareValue >= highThreshold) {
-      return {
-        backgroundColor: field === "finalScore" ? "#4CAF50" : "#E8F5E8",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      };
+      return field === "finalScore" ? "cell-high-score" : "cell-high";
     } else if (compareValue >= lowThreshold) {
-      return {
-        backgroundColor: field === "finalScore" ? "#FF9800" : "#FFF3E0",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      };
+      return field === "finalScore" ? "cell-medium-score" : "cell-medium";
     } else {
-      return {
-        backgroundColor: field === "finalScore" ? "#F44336" : "#FFEBEE",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      };
+      return field === "finalScore" ? "cell-low-score" : "cell-low";
     }
   };
 
@@ -194,9 +169,6 @@ const Dashboard = () => {
         cellStyle: {
           fontWeight: "bold",
           backgroundColor: "#f8f9fa",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
         },
       },
       {
@@ -204,14 +176,14 @@ const Dashboard = () => {
         field: "inlinePassRate",
         width: 160,
         cellRenderer: (params) => `${Math.round(params.value * 100)}%`,
-        cellStyle: getCellStyle,
+        cellClass: getCellClass,
       },
       {
         headerName: "Elec 합격률 (%)",
         field: "elecPassRate",
         width: 160,
         cellRenderer: (params) => `${Math.round(params.value * 100)}%`,
-        cellStyle: getCellStyle,
+        cellClass: getCellClass,
       },
       {
         headerName: "Issue 대응지수 (%)",
@@ -219,70 +191,70 @@ const Dashboard = () => {
         width: 170,
         cellRenderer: (params) => {
           const projectId = params.data.id;
-          return `
-          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <span>${Math.round(params.value * 100)}%</span>
-            <button 
-              class="issue-btn" 
-              data-project-id="${projectId}"
-              style="
-                background: #1890ff; 
-                color: white; 
-                border: none; 
-                border-radius: 4px; 
-                padding: 2px 6px; 
-                font-size: 12px; 
-                cursor: pointer; 
-                margin-left: 8px;
-                min-width: 32px;
-                height: 24px;
-              "
+          return (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+              }}
             >
-              🔧
-            </button>
-          </div>
-        `;
+              <span>{Math.round(params.value * 100)}%</span>
+              <button
+                className="issue-btn"
+                data-project-id={projectId}
+                style={{
+                  background: "#1890ff",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  padding: "2px 6px",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  marginLeft: "8px",
+                  minWidth: "32px",
+                  height: "24px",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedRowData(params.data);
+                  setIsIssueModalVisible(true);
+                }}
+              >
+                🔧
+              </button>
+            </div>
+          );
         },
-        cellStyle: getCellStyle,
-        onCellClicked: (params) => {
-          // 버튼 클릭 이벤트 처리
-          const target = params.event.target;
-          if (target.classList.contains("issue-btn")) {
-            setSelectedRowData(params.data);
-            setIsIssueModalVisible(true);
-          }
-        },
+        cellClass: getCellClass,
       },
       {
         headerName: "WIP 실적 달성률 (%)",
         field: "wipAchievementRate",
         width: 190,
         cellRenderer: (params) => `${Math.round(params.value * 100)}%`,
-        cellStyle: getCellStyle,
+        cellClass: getCellClass,
       },
       {
         headerName: "과제 납기달성률 (%)",
         field: "deadlineAchievementRate",
         width: 190,
         cellRenderer: (params) => `${Math.round(params.value * 100)}%`,
-        cellStyle: getCellStyle,
+        cellClass: getCellClass,
       },
       {
         headerName: "Final Score",
         field: "finalScore",
         width: 150,
         cellRenderer: (params) => `${Math.round(params.value * 100)}%`,
-        cellStyle: getCellStyle,
+        cellClass: getCellClass,
       },
       {
         headerName: "Remark",
         field: "remark",
         width: 150,
-        cellStyle: {
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        },
+        // cellStyle flex 관련 제거
       },
     ],
     [colorSettings]
@@ -459,6 +431,7 @@ const Dashboard = () => {
           }}
         >
           <AgGridReact
+            modules={[ClientSideRowModelModule]}
             columnDefs={columnDefs}
             rowData={rowData}
             pagination={true}
@@ -472,13 +445,7 @@ const Dashboard = () => {
               const selectedData = selectedNodes.map((node) => node.data);
               setSelectedRows(selectedData);
             }}
-            defaultColDef={{
-              cellStyle: {
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              },
-            }}
+            defaultColDef={{}}
           />
         </div>
       </Card>

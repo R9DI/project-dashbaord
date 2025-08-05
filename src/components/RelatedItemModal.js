@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Space } from "antd";
 import { AgGridReact } from "ag-grid-react";
+import { ModuleRegistry } from "ag-grid-community";
+import { ClientSideRowModelModule } from "ag-grid-community";
 
 export const RelatedItemCell = ({ params, openRelatedItemModal }) => {
   const hasRelatedItems =
@@ -93,6 +95,7 @@ const RelatedItemModal = ({
         style={{ height: "400px", width: "100%" }}
       >
         <AgGridReact
+          modules={[ClientSideRowModelModule]}
           columnDefs={[
             {
               field: "selected",

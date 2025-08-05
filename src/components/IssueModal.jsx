@@ -22,10 +22,15 @@ import GanttChart from "./GanttChart.jsx";
 import GanttLegend from "./GanttLegend.jsx";
 import DrawerContent from "./DrawerContent.jsx";
 import { AgGridReact } from "ag-grid-react";
+import { ModuleRegistry } from "ag-grid-community";
+import { ClientSideRowModelModule } from "ag-grid-community";
 import { UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import "ag-grid-community/dist/styles/ag-grid.css";
-import "ag-grid-community/dist/styles/ag-theme-alpine.css";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
+
+// Register the required feature modules with the Grid
+ModuleRegistry.registerModules([ClientSideRowModelModule]);
 import { PlusOutlined } from "@ant-design/icons";
 
 const IssueModal = ({ isVisible, onClose, data }) => {
@@ -561,13 +566,12 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       width: 150,
       cellStyle: {
         color: "#1890ff",
-        textAlign: "left",
-        justifyContent: "flex-start",
-        alignItems: "center",
         fontWeight: "bold",
         fontSize: "13px",
         padding: "8px",
         display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       },
     },
     {
@@ -575,13 +579,87 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       headerName: "Image",
       editable: false,
       width: 120,
-      cellRendererFramework: ImageCell,
-      cellStyle: {
-        display: "flex !important",
-        alignItems: "center !important",
-        justifyContent: "center !important",
-        padding: "8px !important",
-        height: "100% !important",
+      cellRenderer: (params) => {
+        const imageData = params.value;
+        const imageUrls = Array.isArray(imageData)
+          ? imageData
+          : imageData
+          ? [imageData]
+          : [];
+        const firstImageUrl = imageUrls[0];
+
+        if (!firstImageUrl) {
+          return (
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "8px",
+                color: "#999",
+                fontSize: "12px",
+                fontStyle: "italic",
+              }}
+            >
+              이미지 없음
+            </div>
+          );
+        }
+
+        return (
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "4px",
+              position: "relative",
+            }}
+          >
+            <Image.PreviewGroup>
+              <Image
+                src={firstImageUrl}
+                alt="이슈 이미지"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  width: "auto",
+                  height: "auto",
+                  objectFit: "contain",
+                  borderRadius: "4px",
+                  border: "1px solid #e8e8e8",
+                }}
+                fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3Ik1RnG4W+FgYxN"
+              />
+            </Image.PreviewGroup>
+            {imageUrls.length > 1 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "2px",
+                  right: "2px",
+                  backgroundColor: "#1890ff",
+                  color: "white",
+                  borderRadius: "50%",
+                  width: "20px",
+                  height: "20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  border: "2px solid white",
+                }}
+              >
+                +{imageUrls.length - 1}
+              </div>
+            )}
+          </div>
+        );
       },
     },
     {
@@ -592,7 +670,6 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       cellRenderer: (params) => {
         const status = params.data.status || "pending";
         const summary = params.data.summary || "";
-
         const statusLabels = {
           pending: "대기중",
           "in-progress": "진행중",
@@ -600,7 +677,6 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           blocked: "차단됨",
         };
         const statusLabel = statusLabels[status] || "대기중";
-
         const statusColors = {
           pending: "#faad14",
           "in-progress": "#1890ff",
@@ -608,48 +684,50 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           blocked: "#ff4d4f",
         };
         const color = statusColors[status] || "#faad14";
-
         const displayText = summary || "내용 없음";
         const truncatedText =
           displayText.length > 30
             ? displayText.substring(0, 30) + "..."
             : displayText;
-
-        return `
-          <div style="
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px;
-            width: 100%;
-          ">
-            <div style="
-              padding: 2px 6px;
-              border-radius: 8px;
-              font-size: 12px;
-              font-weight: bold;
-              background-color: ${color};
-              color: white;
-              text-align: center;
-              display: inline-block;
-              min-width: 50px;
-              flex-shrink: 0;
-            ">${statusLabel}</div>
-            <div style="
-              font-size: 13px;
-              color: #333;
-              line-height: 1.3;
-              flex: 1;
-            ">${truncatedText}</div>
+        return (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              padding: 8,
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            <div
+              style={{
+                padding: "2px 6px",
+                borderRadius: 8,
+                fontSize: 12,
+                fontWeight: "bold",
+                backgroundColor: color,
+                color: "white",
+                textAlign: "center",
+                minWidth: 50,
+                flexShrink: 0,
+              }}
+            >
+              {statusLabel}
+            </div>
+            <div
+              style={{ fontSize: 13, color: "#333", lineHeight: 1.3, flex: 1 }}
+            >
+              {truncatedText}
+            </div>
           </div>
-        `;
+        );
       },
       cellStyle: {
-        display: "flex !important",
-        alignItems: "center !important",
-        justifyContent: "flex-start !important",
-        padding: "8px !important",
-        height: "100% !important",
+        padding: "8px",
+        display: "flex",
+        alignItems: "center",
       },
     },
     {
@@ -658,7 +736,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       editable: false,
       minWidth: 300,
       flex: 1,
-      cellRendererFramework: (params) => {
+      cellRenderer: (params) => {
         const detail = params.value || "";
         if (!detail) {
           return (
@@ -706,11 +784,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         );
       },
       cellStyle: {
+        padding: "8px",
         display: "flex",
         alignItems: "center",
-        justifyContent: "flex-start",
-        padding: "8px",
-        height: "100%",
       },
     },
     {
@@ -718,7 +794,27 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       headerName: "Start",
       editable: false,
       width: 120,
-      cellRendererFramework: StartDateCell,
+      cellRenderer: (params) => {
+        const currentRow = params.data;
+        const startDate = currentRow?.start || "";
+
+        return (
+          <div
+            style={{
+              padding: "4px 8px",
+              fontSize: "13px",
+              color: startDate ? "#333" : "#999",
+              fontStyle: startDate ? "normal" : "italic",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+            }}
+          >
+            {startDate || "미정"}
+          </div>
+        );
+      },
       cellStyle: {
         padding: "8px",
         fontSize: "13px",
@@ -731,7 +827,27 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       headerName: "End",
       editable: false,
       width: 120,
-      cellRendererFramework: EndDateCell,
+      cellRenderer: (params) => {
+        const currentRow = params.data;
+        const endDate = currentRow?.end || "";
+
+        return (
+          <div
+            style={{
+              padding: "4px 8px",
+              fontSize: "13px",
+              color: endDate ? "#333" : "#999",
+              fontStyle: endDate ? "normal" : "italic",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "100%",
+            }}
+          >
+            {endDate || "미정"}
+          </div>
+        );
+      },
       cellStyle: {
         padding: "8px",
         fontSize: "13px",
@@ -907,6 +1023,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
               }}
             >
               <AgGridReact
+                modules={[ClientSideRowModelModule]}
                 columnDefs={columnDefs}
                 rowData={rowData}
                 rowHeight={80}

@@ -53,3 +53,31 @@ main {
   padding: 0 !important;
   line-height: 1.2 !important;
 }
+
+/* AG Grid Cell Classes */
+.cell-high {
+  background-color: #e8f5e8 !important;
+}
+
+.cell-medium {
+  background-color: #fff3e0 !important;
+}
+
+.cell-low {
+  background-color: #ffebee !important;
+}
+
+.cell-high-score {
+  background-color: #4caf50 !important;
+  color: white !important;
+}
+
+.cell-medium-score {
+  background-color: #ff9800 !important;
+  color: white !important;
+}
+
+.cell-low-score {
+  background-color: #f44336 !important;
+  color: white !important;
+}
