@@ -2,33 +2,22 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry } from "ag-grid-community";
 import { ClientSideRowModelModule } from "ag-grid-community";
-import {
-  Card,
-  Button,
-  Space,
-  Tag,
-  Typography,
-  Modal,
-  Form,
-  Row,
-  Col,
-  InputNumber,
-  message,
-} from "antd";
+import { Card, Button, Space, Typography, message } from "antd";
 import {
   BarChartOutlined,
   PlusOutlined,
   ReloadOutlined,
-  SettingOutlined,
   IssuesCloseOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
+import { defaultColorSettings, getColorClass } from "../config/colorSettings";
 
 // Register the required feature modules with the Grid
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 import IssueModal from "./IssueModal";
+import ColorSettingsModal from "./ColorSettingsModal";
 
 const { Text } = Typography;
 
@@ -39,14 +28,7 @@ const Dashboard = () => {
   const [selectedRowData, setSelectedRowData] = useState(null);
   const [selectedRows, setSelectedRows] = useState([]);
   const gridRef = useRef(null);
-  const [colorSettings, setColorSettings] = useState({
-    inlinePassRate: { high: 90, low: 70 },
-    elecPassRate: { high: 90, low: 70 },
-    issueResponseIndex: { high: 90, low: 70 },
-    wipAchievementRate: { high: 90, low: 70 },
-    deadlineAchievementRate: { high: 90, low: 70 },
-    finalScore: { high: 90, low: 70 },
-  });
+  const [colorSettings, setColorSettings] = useState(defaultColorSettings);
 
   // 랜덤 값 생성 함수
   const generateRandomValue = (min, max) => {
@@ -145,17 +127,7 @@ const Dashboard = () => {
     const field = params.column.colId;
     const value = params.value;
     const settings = colorSettings[field];
-    if (!settings) return "";
-    const highThreshold = settings.high / 100;
-    const lowThreshold = settings.low / 100;
-    const compareValue = value;
-    if (compareValue >= highThreshold) {
-      return field === "finalScore" ? "cell-high-score" : "cell-high";
-    } else if (compareValue >= lowThreshold) {
-      return field === "finalScore" ? "cell-medium-score" : "cell-medium";
-    } else {
-      return field === "finalScore" ? "cell-low-score" : "cell-low";
-    }
+    return getColorClass(field, value, settings);
   };
 
   // 컬럼 정의
@@ -410,13 +382,13 @@ const Dashboard = () => {
             <Button icon={<ReloadOutlined />} onClick={refreshData}>
               데이터 새로고침
             </Button>
-            <Button
-              type="primary"
-              icon={<SettingOutlined />}
-              onClick={() => setIsSettingsModalVisible(true)}
-            >
-              색상 기준 설정
-            </Button>
+            <ColorSettingsModal
+              isVisible={isSettingsModalVisible}
+              onCancel={() => setIsSettingsModalVisible(false)}
+              onSave={handleSettingsSave}
+              initialValues={colorSettings}
+              onOpen={() => setIsSettingsModalVisible(true)}
+            />
           </Space>
         </div>
 
@@ -449,282 +421,6 @@ const Dashboard = () => {
           />
         </div>
       </Card>
-
-      {/* 색상 기준 설정 모달 */}
-      <Modal
-        title="색상 기준 설정"
-        open={isSettingsModalVisible}
-        onCancel={() => setIsSettingsModalVisible(false)}
-        footer={null}
-        width={600}
-      >
-        <Form
-          initialValues={colorSettings}
-          onFinish={handleSettingsSave}
-          layout="vertical"
-        >
-          <div
-            style={{
-              marginBottom: "16px",
-              padding: "12px",
-              backgroundColor: "#f0f8ff",
-              borderRadius: "8px",
-            }}
-          >
-            <Text strong>색상 기준:</Text>
-            <div style={{ marginTop: "8px" }}>
-              <Tag color="green">녹색: 기준값 이상</Tag>
-              <Tag color="gold">노란색: 낮은 기준값 ~ 높은 기준값</Tag>
-              <Tag color="red">빨간색: 낮은 기준값 미만</Tag>
-            </div>
-          </div>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Inline 합격률"
-                name={["inlinePassRate", "high"]}
-                rules={[
-                  { required: true, message: "높은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="높은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  style={{ width: "100%" }}
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label=" "
-                name={["inlinePassRate", "low"]}
-                rules={[
-                  { required: true, message: "낮은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="낮은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  style={{ width: "100%" }}
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Elec 합격률"
-                name={["elecPassRate", "high"]}
-                rules={[
-                  { required: true, message: "높은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="높은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  style={{ width: "100%" }}
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label=" "
-                name={["elecPassRate", "low"]}
-                rules={[
-                  { required: true, message: "낮은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="낮은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  style={{ width: "100%" }}
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Issue 대응지수"
-                name={["issueResponseIndex", "high"]}
-                rules={[
-                  { required: true, message: "높은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="높은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  style={{ width: "100%" }}
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label=" "
-                name={["issueResponseIndex", "low"]}
-                rules={[
-                  { required: true, message: "낮은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="낮은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  style={{ width: "100%" }}
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="WIP 실적 달성률"
-                name={["wipAchievementRate", "high"]}
-                rules={[
-                  { required: true, message: "높은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="높은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  style={{ width: "100%" }}
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label=" "
-                name={["wipAchievementRate", "low"]}
-                rules={[
-                  { required: true, message: "낮은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="낮은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  style={{ width: "100%" }}
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="과제 납기달성률"
-                name={["deadlineAchievementRate", "high"]}
-                rules={[
-                  { required: true, message: "높은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="높은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  style={{ width: "100%" }}
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label=" "
-                name={["deadlineAchievementRate", "low"]}
-                rules={[
-                  { required: true, message: "낮은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="낮은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  style={{ width: "100%" }}
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="Final Score"
-                name={["finalScore", "high"]}
-                rules={[
-                  { required: true, message: "높은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="높은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  style={{ width: "100%" }}
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label=" "
-                name={["finalScore", "low"]}
-                rules={[
-                  { required: true, message: "낮은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="낮은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  style={{ width: "100%" }}
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <div style={{ textAlign: "right", marginTop: "16px" }}>
-            <Space>
-              <Button onClick={() => setIsSettingsModalVisible(false)}>
-                취소
-              </Button>
-              <Button type="primary" htmlType="submit">
-                저장
-              </Button>
-            </Space>
-          </div>
-        </Form>
-      </Modal>
 
       {/* Issue Modal */}
       <IssueModal
