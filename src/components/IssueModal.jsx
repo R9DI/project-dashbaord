@@ -58,6 +58,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const drawerRef = useRef(null);
+  const gridRef = useRef(null);
 
   // props 변경 감지
   useEffect(() => {
@@ -101,6 +102,13 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       );
       message.success("변경사항이 저장되었습니다!");
       setIsDrawerVisible(false);
+
+      // AG Grid의 행 높이를 다시 계산
+      setTimeout(() => {
+        if (gridRef.current && gridRef.current.api) {
+          gridRef.current.api.resetRowHeights();
+        }
+      }, 100);
     }
   };
 
@@ -1023,6 +1031,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
               }}
             >
               <AgGridReact
+                ref={gridRef}
                 modules={[ClientSideRowModelModule]}
                 columnDefs={columnDefs}
                 rowData={rowData}
