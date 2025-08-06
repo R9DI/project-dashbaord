@@ -469,35 +469,14 @@ const IssueModal = ({ isVisible, onClose, data }) => {
             ? displayText.substring(0, 30) + "..."
             : displayText;
         return (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              padding: 8,
-              width: "100%",
-              height: "100%",
-            }}
-          >
+          <div className="flex items-center justify-center gap-2 p-2 w-full h-full">
             <div
-              style={{
-                padding: "2px 6px",
-                borderRadius: 8,
-                fontSize: 12,
-                fontWeight: "bold",
-                backgroundColor: color,
-                color: "white",
-                textAlign: "center",
-                minWidth: 50,
-                flexShrink: 0,
-              }}
+              className="px-1.5 py-0.5 rounded-lg text-xs font-bold text-white text-center min-w-12 flex-shrink-0"
+              style={{ backgroundColor: color }}
             >
               {statusLabel}
             </div>
-            <div
-              style={{ fontSize: 13, color: "#333", lineHeight: 1.3, flex: 1 }}
-            >
+            <div className="text-sm text-gray-700 leading-relaxed flex-1">
               {truncatedText}
             </div>
           </div>
@@ -519,19 +498,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         const detail = params.value || "";
         if (!detail) {
           return (
-            <div
-              style={{
-                color: "#999",
-                fontStyle: "italic",
-                padding: "8px",
-                fontSize: "13px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "100%",
-                width: "100%",
-              }}
-            >
+            <div className="text-gray-400 italic p-2 text-sm flex items-center justify-center h-full w-full">
               내용 없음
             </div>
           );
@@ -547,8 +514,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           <div className="p-1 px-2 text-sm leading-relaxed text-gray-700 text-left flex items-center justify-start h-full w-full overflow-auto">
             <div
               dangerouslySetInnerHTML={createMarkup(detail)}
-              className="rich-text-preview w-full"
-              style={{ maxHeight: "100%" }}
+              className="rich-text-preview w-full max-h-full"
             />
           </div>
         );
@@ -571,16 +537,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
 
         return (
           <div
-            style={{
-              padding: "4px 8px",
-              fontSize: "13px",
-              color: startDate ? "#333" : "#999",
-              fontStyle: startDate ? "normal" : "italic",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "100%",
-            }}
+            className={`px-2 py-1 text-sm flex items-center justify-center h-full ${
+              startDate ? "text-gray-700" : "text-gray-400 italic"
+            }`}
           >
             {startDate || "미정"}
           </div>
@@ -604,16 +563,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
 
         return (
           <div
-            style={{
-              padding: "4px 8px",
-              fontSize: "13px",
-              color: endDate ? "#333" : "#999",
-              fontStyle: endDate ? "normal" : "italic",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: "100%",
-            }}
+            className={`px-2 py-1 text-sm flex items-center justify-center h-full ${
+              endDate ? "text-gray-700" : "text-gray-400 italic"
+            }`}
           >
             {endDate || "미정"}
           </div>
@@ -658,16 +610,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     <>
       <Modal
         title={
-          <div
-            style={{
-              fontSize: "18px",
-              fontWeight: "600",
-              color: "#1890ff",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
+          <div className="text-lg font-semibold text-blue-500 flex items-center gap-2">
             📊{" "}
             {data ? `${data.projectName} - 이슈 관리` : getCurrentMonthYear()}
           </div>
@@ -676,11 +619,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         onOk={handleOk}
         onCancel={handleCancel}
         width="90vw"
-        style={{
-          top: 10,
-          borderRadius: "12px",
-          maxHeight: "90vh",
-        }}
+        className="top-2.5 rounded-xl max-h-[90vh]"
         styles={{
           body: {
             height: "calc(90vh - 120px)",
@@ -693,10 +632,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           <Button
             key="back"
             onClick={handleCancel}
-            style={{
-              borderRadius: "6px",
-              fontWeight: "500",
-            }}
+            className="rounded-md font-medium"
           >
             닫기
           </Button>,
@@ -704,10 +640,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
             key="submit"
             type="primary"
             onClick={handleOk}
-            style={{
-              borderRadius: "6px",
-              fontWeight: "500",
-            }}
+            className="rounded-md font-medium"
           >
             확인
           </Button>,
@@ -717,24 +650,16 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           <Collapse.Panel
             key="1"
             header={
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  fontWeight: "600",
-                }}
-              >
+              <div className="flex items-center gap-2 font-semibold">
                 📊 Issue Schedule
               </div>
             }
           >
             <div>
               <div
+                className="min-h-[180px] max-h-[400px]"
                 style={{
                   height: `${Math.max(sortedIssues.length * 28 + 80, 180)}px`,
-                  minHeight: "180px",
-                  maxHeight: "400px",
                 }}
               >
                 <GanttChart issueData={sortedIssues} />
@@ -745,22 +670,8 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           <Collapse.Panel
             key="2"
             header={
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  width: "100%",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    fontWeight: "600",
-                  }}
-                >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2 font-semibold">
                   📋 전체 이슈 목록 ({sortedIssues.length}개)
                 </div>
                 <Button
@@ -771,14 +682,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                   }}
                   icon={<span>➕</span>}
                   size="small"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "4px",
-                    fontWeight: "600",
-                    borderRadius: "6px",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                  }}
+                  className="flex items-center gap-1 font-semibold rounded-md shadow-md"
                 >
                   새 이슈 추가
                 </Button>
@@ -786,11 +690,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
             }
           >
             <div
-              className="ag-theme-alpine"
+              className="ag-theme-alpine w-full min-h-[500px]"
               style={{
                 height: "calc(90vh - 250px)",
-                minHeight: "500px",
-                width: "100%",
               }}
             >
               <AgGridReact
@@ -923,16 +825,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       {/* Drawer for 상세 정보 편집 */}
       <Drawer
         title={
-          <div
-            style={{
-              fontSize: "16px",
-              fontWeight: "600",
-              color: "#1890ff",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
+          <div className="text-base font-semibold text-blue-500 flex items-center gap-2">
             📋 {selectedRow?.issue || "이슈 상세 정보 편집"}
           </div>
         }
