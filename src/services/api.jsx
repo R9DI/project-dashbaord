@@ -93,6 +93,7 @@ export const issueApi = {
   // 이슈 업데이트
   updateIssue: async (id, data) => {
     await delay(300);
+    // 업데이트된 데이터를 반환하여 캐시에 즉시 반영
     return { id, ...data };
   },
 

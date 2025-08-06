@@ -91,7 +91,6 @@ const IssueModal = ({ isVisible, onClose, data }) => {
   const saveDrawerData = (localData) => {
     if (selectedRow && localData) {
       const updatedData = {
-        ...selectedRow,
         detail: localData.issueContent,
         summary: localData.summaryContent,
         status: localData.currentStatus,
@@ -107,38 +106,6 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           onSuccess: () => {
             message.success("변경사항이 저장되었습니다!");
             setIsDrawerVisible(false);
-
-            // AG Grid의 행 높이를 다시 계산
-            setTimeout(() => {
-              if (gridRef.current && gridRef.current.api) {
-                console.log("Attempting to reset row heights...");
-
-                // 특정 행의 높이만 재계산
-                const rowNode = gridRef.current.api.getRowNode(selectedRow.id);
-                if (rowNode) {
-                  console.log(
-                    "Resetting specific row height for:",
-                    selectedRow.id
-                  );
-                  gridRef.current.api.resetRowHeights([rowNode]);
-                }
-
-                // 전체 행 높이 재계산
-                console.log("Resetting all row heights");
-                gridRef.current.api.resetRowHeights();
-
-                // 그리드 리프레시
-                gridRef.current.api.refreshCells();
-
-                // 강제로 다시 계산
-                setTimeout(() => {
-                  if (gridRef.current && gridRef.current.api) {
-                    gridRef.current.api.resetRowHeights();
-                    gridRef.current.api.refreshCells();
-                  }
-                }, 100);
-              }
-            }, 300);
           },
           onError: () => {
             message.error("저장에 실패했습니다!");
@@ -163,6 +130,16 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       return new Date(dateB) - new Date(dateA);
     });
   }, [issues]);
+
+  // issues 데이터가 변경될 때 AG Grid 행 높이 재계산
+  useEffect(() => {
+    if (gridRef.current && gridRef.current.api && issues.length > 0) {
+      setTimeout(() => {
+        gridRef.current.api.resetRowHeights();
+        gridRef.current.api.refreshCells();
+      }, 100);
+    }
+  }, [issues.length]); // issues.length로 변경하여 배열 길이만 감지
 
   // 현재 월에 진행 중인지 확인하는 함수
   const isCurrentMonthActive = (item) => {
@@ -996,44 +973,66 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 rowData={sortedIssues}
                 getRowHeight={(params) => {
                   const detail = params.data?.detail || "";
-                  console.log(
-                    `getRowHeight called for row ${params.data?.id}, detail:`,
-                    detail
-                  );
+                  const summary = params.data?.summary || "";
 
-                  if (!detail) return 80; // 기본 높이
+                  if (!detail && !summary) return 80; // 기본 높이
 
-                  // HTML 태그를 제거하고 실제 텍스트 내용만 추출
-                  const tempDiv = document.createElement("div");
-                  tempDiv.innerHTML = detail;
-                  const plainText =
-                    tempDiv.textContent || tempDiv.innerText || "";
+                  // Rich text의 HTML 태그를 분석하여 줄 수 계산
+                  const calculateRichTextLines = (htmlContent) => {
+                    if (!htmlContent) return 0;
 
-                  // 줄 수 계산 (Rich text의 실제 내용 고려)
-                  const lines = plainText
-                    .split("\n")
-                    .filter((line) => line.trim() !== "");
+                    // 줄바꿈을 만드는 태그들을 찾아서 개수 세기
+                    const lineBreakTags = [
+                      "<p>",
+                      "<li>",
+                      "<br>",
+                      "<div>",
+                      "<h1>",
+                      "<h2>",
+                      "<h3>",
+                      "<h4>",
+                      "<h5>",
+                      "<h6>",
+                    ];
+                    let lineCount = 0;
 
-                  const baseHeight = 80;
-                  const lineHeight = 18; // 줄 간격 조정
-                  const maxLines = 12; // 최대 줄 수 증가
+                    // 각 태그의 개수를 세기
+                    lineBreakTags.forEach((tag) => {
+                      const regex = new RegExp(tag, "gi");
+                      const matches = htmlContent.match(regex);
+                      if (matches) {
+                        lineCount += matches.length;
+                      }
+                    });
 
-                  // 3줄까지는 기본 높이, 4줄부터 추가 높이
-                  const extraLines = Math.max(
-                    0,
-                    Math.min(lines.length - 3, maxLines - 3)
-                  );
-                  const extraHeight = extraLines * lineHeight;
+                    // <br> 태그는 추가로 세기 (이미 위에서 세었지만 명확히 하기 위해)
+                    const brMatches = htmlContent.match(/<br\s*\/?>/gi);
+                    if (brMatches) {
+                      lineCount += brMatches.length;
+                    }
 
-                  const finalHeight = baseHeight + extraHeight;
-                  console.log(
-                    `Row ${params.data?.id}: detail="${detail.substring(
-                      0,
-                      50
-                    )}...", lines=${lines.length}, height=${finalHeight}`
-                  );
+                    // 최소 1줄 보장
+                    return Math.max(lineCount, 1);
+                  };
 
-                  return finalHeight;
+                  // 상세 내용의 줄 수만 계산
+                  const totalLines = calculateRichTextLines(detail);
+
+                  // 25px * 줄수 + 5px 패딩
+                  const lineHeight = 25; // 한 줄 높이
+                  const padding = 5; // 패딩
+                  const finalHeight = lineHeight * totalLines + padding;
+
+                  // 디버깅을 위한 콘솔 출력
+                  console.log(`Row ${params.data?.id}:`, {
+                    detail: detail.substring(0, 100) + "...",
+                    totalLines,
+                    finalHeight,
+                    detailLength: detail.length,
+                    htmlContent: detail,
+                  });
+
+                  return Math.max(finalHeight, 80); // 최소 높이 보장
                 }}
                 getRowStyle={(params) => {
                   // 이번 달에 진행 중인 항목은 하얀색 배경
@@ -1064,6 +1063,14 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 onRowDoubleClicked={onRowClicked}
                 onRowDataUpdated={() => {
                   // 데이터 업데이트 후 행 높이 재계산
+                  setTimeout(() => {
+                    if (gridRef.current && gridRef.current.api) {
+                      gridRef.current.api.resetRowHeights();
+                    }
+                  }, 100);
+                }}
+                onGridReady={() => {
+                  // 그리드가 준비되면 행 높이 재계산
                   setTimeout(() => {
                     if (gridRef.current && gridRef.current.api) {
                       gridRef.current.api.resetRowHeights();
