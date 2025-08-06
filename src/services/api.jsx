@@ -1,6 +1,9 @@
 // 실제 API 호출을 시뮬레이션하는 함수들
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// 로컬 프로젝트 데이터 저장소
+let localProjects = null;
+
 // 이슈 데이터 API
 export const issueApi = {
   // 이슈 목록 가져오기
@@ -110,6 +113,11 @@ export const projectApi = {
   getProjects: async () => {
     await delay(500);
 
+    // 이미 로컬 데이터가 있으면 반환
+    if (localProjects) {
+      return localProjects;
+    }
+
     const projectNames = [
       "5G 네트워크 최적화",
       "AI 기반 품질 검사",
@@ -170,12 +178,23 @@ export const projectApi = {
       });
     }
 
+    // 로컬 데이터에 저장
+    localProjects = data;
     return data;
   },
 
   // 프로젝트 추가
   addProject: async (data) => {
     await delay(300);
-    return { id: Date.now(), ...data };
+    const newProject = { id: Date.now(), ...data };
+
+    // 로컬 데이터에 새 프로젝트 추가
+    if (localProjects) {
+      localProjects.push(newProject);
+    } else {
+      localProjects = [newProject];
+    }
+
+    return newProject;
   },
 };

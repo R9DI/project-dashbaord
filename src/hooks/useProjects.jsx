@@ -15,9 +15,33 @@ export const useAddProject = () => {
 
   return useMutation({
     mutationFn: (data) => projectApi.addProject(data),
-    onSuccess: () => {
-      // 프로젝트 목록 캐시 무효화
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    onMutate: async (newProject) => {
+      // 이전 데이터 백업
+      await queryClient.cancelQueries({ queryKey: ["projects"] });
+      const previousProjects = queryClient.getQueryData(["projects"]);
+
+      // 낙관적 업데이트
+      queryClient.setQueryData(["projects"], (old) => {
+        if (!old) return [newProject];
+        return [...old, newProject];
+      });
+
+      return { previousProjects };
+    },
+    onError: (err, variables, context) => {
+      // 에러 시 이전 데이터로 롤백
+      if (context?.previousProjects) {
+        queryClient.setQueryData(["projects"], context.previousProjects);
+      }
+    },
+    onSuccess: (newProject) => {
+      // 성공 시 캐시를 업데이트된 데이터로 직접 설정
+      queryClient.setQueryData(["projects"], (old) => {
+        if (!old) return [newProject];
+        return old.map((project) =>
+          project.id === newProject.id ? newProject : project
+        );
+      });
     },
   });
 };
