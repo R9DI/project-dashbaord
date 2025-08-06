@@ -330,20 +330,8 @@ const GanttChart = ({ issueData = [] }) => {
           // 툴팁 생성
           const tooltip = document.createElement("div");
           tooltip.setAttribute("class", "gantt-tooltip");
-          tooltip.style.cssText = `
-            position: absolute;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-family: Arial, sans-serif;
-            pointer-events: none;
-            z-index: 1000;
-            white-space: nowrap;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            max-width: 250px;
-          `;
+          tooltip.className =
+            "absolute bg-black bg-opacity-90 text-white p-2 px-3 rounded text-xs font-sans pointer-events-none z-50 whitespace-nowrap shadow-lg max-w-64";
 
           const startDate = item.start.format("YYYY-MM-DD");
           const endDate = item.hasEndDate
@@ -466,7 +454,7 @@ const GanttChart = ({ issueData = [] }) => {
   }
 
   return (
-    <div className="w-full h-full overflow-auto bg-white border border-gray-200 rounded-lg">
+    <div className="w-full h-full overflow-auto bg-white border border-gray-200 rounded-lg shadow-sm">
       <svg ref={svgRef} className="w-full min-h-full bg-white" />
     </div>
   );

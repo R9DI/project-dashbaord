@@ -7,17 +7,11 @@ import {
   BarChartOutlined,
   PlusOutlined,
   ReloadOutlined,
-  IssuesCloseOutlined,
-  DeleteOutlined,
 } from "@ant-design/icons";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import { getColorClass } from "../utils/colorUtils";
-import {
-  useProjects,
-  useAddProject,
-  useDeleteProject,
-} from "../hooks/useProjects";
+import { useProjects, useAddProject } from "../hooks/useProjects";
 import { useColorSettingsStore } from "../stores/colorSettingsStore";
 import { useModalStore } from "../stores/modalStore";
 
@@ -29,13 +23,11 @@ import ColorSettingsModal from "./ColorSettingsModal";
 const { Text } = Typography;
 
 const Dashboard = () => {
-  const [selectedRows, setSelectedRows] = useState([]);
   const gridRef = useRef(null);
 
   // React Query hooks
   const { data: rowData = [], isLoading, refetch } = useProjects();
   const addProjectMutation = useAddProject();
-  const deleteProjectMutation = useDeleteProject();
 
   // Zustand stores
   const { colorSettings, setColorSettings } = useColorSettingsStore();
@@ -107,30 +99,11 @@ const Dashboard = () => {
         cellRenderer: (params) => {
           const projectId = params.data.id;
           return (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                width: "100%",
-              }}
-            >
+            <div className="flex items-center justify-between w-full">
               <span>{Math.round(params.value * 100)}%</span>
               <button
-                className="issue-btn"
+                className="issue-btn bg-blue-500 text-white border-none rounded px-1.5 py-0.5 text-xs cursor-pointer ml-2 min-w-8 h-6"
                 data-project-id={projectId}
-                style={{
-                  background: "#1890ff",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  padding: "2px 6px",
-                  fontSize: "12px",
-                  cursor: "pointer",
-                  marginLeft: "8px",
-                  minWidth: "32px",
-                  height: "24px",
-                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedRowData(params.data);
@@ -195,18 +168,6 @@ const Dashboard = () => {
     });
   };
 
-  // 단일 행 삭제
-  const deleteRow = (rowId) => {
-    deleteProjectMutation.mutate(rowId, {
-      onSuccess: () => {
-        message.success("행이 삭제되었습니다!");
-      },
-      onError: () => {
-        message.error("행 삭제에 실패했습니다!");
-      },
-    });
-  };
-
   // 데이터 새로고침
   const refreshData = () => {
     refetch();
@@ -256,11 +217,6 @@ const Dashboard = () => {
           </div>
         }
         className="mb-4"
-        styles={{
-          body: {
-            padding: "16px",
-          },
-        }}
       >
         {/* 통계 정보 */}
         <div className="flex justify-between mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
@@ -294,21 +250,7 @@ const Dashboard = () => {
             <Button type="primary" icon={<PlusOutlined />} onClick={addNewData}>
               새 데이터 생성
             </Button>
-            <Button
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => {
-                if (selectedRows.length === 0) {
-                  message.warning("삭제할 행을 선택해주세요.");
-                  return;
-                }
-                deleteRow(selectedRows[0].id);
-                setSelectedRows([]);
-              }}
-              disabled={selectedRows.length === 0}
-            >
-              선택 행 삭제
-            </Button>
+
             <Button icon={<ReloadOutlined />} onClick={refreshData}>
               데이터 새로고침
             </Button>
@@ -330,11 +272,6 @@ const Dashboard = () => {
             ref={gridRef}
             rowSelection="single"
             suppressRowClickSelection={false}
-            onSelectionChanged={(event) => {
-              const selectedNodes = event.api.getSelectedNodes();
-              const selectedData = selectedNodes.map((node) => node.data);
-              setSelectedRows(selectedData);
-            }}
             defaultColDef={{}}
           />
         </div>

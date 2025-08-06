@@ -3,32 +3,28 @@ import {
   Modal,
   Button,
   Tag,
-  Table,
-  Tabs,
   Drawer,
-  Card,
   Space,
   Typography,
-  Progress,
-  Form,
-  Row,
-  Col,
-  InputNumber,
   message,
   Collapse,
   Image,
+  Upload,
+  DatePicker,
+  Input,
+  Select,
 } from "antd";
 import GanttChart from "./GanttChart.jsx";
 import GanttLegend from "./GanttLegend.jsx";
-import DrawerContent from "./DrawerContent.jsx";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry } from "ag-grid-community";
 import { ClientSideRowModelModule } from "ag-grid-community";
-import { UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import { useIssues, useAddIssue, useUpdateIssue } from "../hooks/useIssues";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 // Register the required feature modules with the Grid
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
@@ -60,24 +56,62 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     "bullet",
     "indent",
   ];
+
   const [isModalVisible, setIsModalVisible] = useState(isVisible);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
-  const drawerRef = useRef(null);
   const gridRef = useRef(null);
+
+  // 드로워 내부 상태 관리
+  const [localIssueContent, setLocalIssueContent] = useState("");
+  const [localSummaryContent, setLocalSummaryContent] = useState("");
+  const [localCurrentStatus, setLocalCurrentStatus] = useState("pending");
+  const [localImageUrls, setLocalImageUrls] = useState([]);
+  const [localFileUrls, setLocalFileUrls] = useState([]);
+  const [localStartDate, setLocalStartDate] = useState("");
+  const [localEndDate, setLocalEndDate] = useState("");
 
   // props 변경 감지
   useEffect(() => {
     setIsModalVisible(isVisible);
   }, [isVisible]);
 
+  // 선택된 행이 변경될 때 드로워 상태 초기화
+  useEffect(() => {
+    if (selectedRow) {
+      setLocalIssueContent(selectedRow.detail || "");
+      setLocalSummaryContent(selectedRow.summary || "");
+      setLocalCurrentStatus(selectedRow.status || "pending");
+
+      // 이미지 URL 배열 안전하게 처리
+      const imageData = selectedRow.img;
+      if (Array.isArray(imageData)) {
+        setLocalImageUrls(imageData);
+      } else if (imageData && typeof imageData === "string") {
+        setLocalImageUrls([imageData]);
+      } else {
+        setLocalImageUrls([]);
+      }
+
+      // 파일 URL 배열 안전하게 처리
+      const fileData = selectedRow.file;
+      if (Array.isArray(fileData)) {
+        setLocalFileUrls(fileData);
+      } else if (fileData && typeof fileData === "string") {
+        setLocalFileUrls([fileData]);
+      } else {
+        setLocalFileUrls([]);
+      }
+
+      setLocalStartDate(selectedRow.start || "");
+      setLocalEndDate(selectedRow.end || "");
+    }
+  }, [selectedRow]);
+
   // 드로워가 닫힐 때 자동 저장
   useEffect(() => {
-    if (!isDrawerVisible && selectedRow && drawerRef.current) {
-      const localData = drawerRef.current.getData();
-      if (localData) {
-        saveDrawerData(localData);
-      }
+    if (!isDrawerVisible && selectedRow) {
+      saveDrawerData();
     }
   }, [isDrawerVisible, selectedRow]);
 
@@ -88,16 +122,16 @@ const IssueModal = ({ isVisible, onClose, data }) => {
   };
 
   // 드로워에서 데이터 저장 함수
-  const saveDrawerData = (localData) => {
-    if (selectedRow && localData) {
+  const saveDrawerData = () => {
+    if (selectedRow) {
       const updatedData = {
-        detail: localData.issueContent,
-        summary: localData.summaryContent,
-        status: localData.currentStatus,
-        img: localData.imageUrls, // 이미지 URL 배열 업데이트
-        file: localData.fileUrls, // 첨부파일 URL 배열 업데이트
-        start: localData.startDate, // 시작일 업데이트
-        end: localData.endDate, // 종료일 업데이트
+        detail: localIssueContent,
+        summary: localSummaryContent,
+        status: localCurrentStatus,
+        img: localImageUrls,
+        file: localFileUrls,
+        start: localStartDate,
+        end: localEndDate,
       };
 
       updateIssueMutation.mutate(
@@ -185,16 +219,6 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     if (onClose) onClose();
   };
 
-  // 드로워 열기
-  const showDrawer = () => {
-    setIsDrawerVisible(true);
-  };
-
-  // 드로워 닫기
-  const closeDrawer = () => {
-    setIsDrawerVisible(false);
-  };
-
   const addNewIssue = () => {
     const today = dayjs().format("YYYY-MM-DD");
     const nextWeek = dayjs().add(7, "day").format("YYYY-MM-DD"); // 오늘부터 7일 후
@@ -219,161 +243,6 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         message.error("이슈 추가에 실패했습니다!");
       },
     });
-  };
-
-  // 이미지 표시 셀 렌더러 (읽기 전용)
-  const ImageCell = (props) => {
-    const imageData = props.value;
-
-    // 이미지 데이터가 배열인지 문자열인지 확인
-    const imageUrls = Array.isArray(imageData)
-      ? imageData
-      : imageData
-      ? [imageData]
-      : [];
-    const firstImageUrl = imageUrls[0];
-
-    if (!firstImageUrl) {
-      return (
-        <div className="w-full h-full flex items-center justify-center p-2 text-gray-500 text-xs italic">
-          이미지 없음
-        </div>
-      );
-    }
-
-    return (
-      <div className="w-full h-full flex items-center justify-center p-1 relative">
-        <Image.PreviewGroup>
-          <Image
-            src={firstImageUrl}
-            alt="이슈 이미지"
-            className="max-w-full max-h-full w-auto h-auto object-contain rounded border border-gray-200"
-            fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3Ik1RnG4W+FgYxN"
-          />
-        </Image.PreviewGroup>
-        {/* 여러 이미지가 있을 때 개수 표시 */}
-        {imageUrls.length > 1 && (
-          <div className="absolute top-0.5 right-0.5 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold border-2 border-white">
-            +{imageUrls.length - 1}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Start Date 셀 렌더러 (읽기 전용)
-  const StartDateCell = (props) => {
-    const currentRow = props.data;
-    const startDate = currentRow?.start || "";
-
-    return (
-      <div
-        className={`px-2 py-1 text-sm flex items-center h-full ${
-          startDate ? "text-gray-700" : "text-gray-500 italic"
-        }`}
-      >
-        {startDate || "미정"}
-      </div>
-    );
-  };
-
-  // End Date 셀 렌더러 (읽기 전용)
-  const EndDateCell = (props) => {
-    const currentRow = props.data;
-    const endDate = currentRow?.end || "";
-
-    return (
-      <div
-        className={`px-2 py-1 text-sm flex items-center h-full ${
-          endDate ? "text-gray-700" : "text-gray-500 italic"
-        }`}
-      >
-        {endDate || "미정"}
-      </div>
-    );
-  };
-
-  // Detail 컬럼 셀 렌더러 (읽기 전용)
-  const DetailCell = (props) => {
-    const currentRow = props.data;
-    const detail = currentRow?.detail || "";
-
-    // 여러줄 텍스트를 말머리 부호로 변환
-    const formatDetailText = (text) => {
-      if (!text) return "";
-      const lines = text.split("\n").filter((line) => line.trim() !== "");
-      return lines.map((line, index) => (
-        <div key={index} className="mb-0.5 leading-tight">
-          • {line.trim()}
-        </div>
-      ));
-    };
-
-    return (
-      <div
-        className={`p-2 text-xs leading-relaxed max-h-15 overflow-hidden ${
-          detail ? "text-gray-700" : "text-gray-500 italic"
-        }`}
-      >
-        {detail ? formatDetailText(detail) : "내용 없음"}
-      </div>
-    );
-  };
-
-  // Progress 셀 렌더러 (읽기 전용)
-  const ProgressCell = (props) => {
-    const currentRow = props.data;
-    const progress = currentRow?.progress || "";
-
-    return (
-      <div
-        className={`p-2 text-xs leading-relaxed max-h-15 overflow-hidden flex items-center justify-center h-full ${
-          progress ? "text-gray-700" : "text-gray-500 italic"
-        }`}
-      >
-        {progress || "진행사항 없음"}
-      </div>
-    );
-  };
-
-  // File 셀 렌더러 (읽기 전용)
-  const FileCell = (props) => {
-    const fileData = props.value;
-
-    // 파일 데이터가 배열인지 문자열인지 확인
-    const files = Array.isArray(fileData)
-      ? fileData
-      : fileData
-      ? [fileData]
-      : [];
-    const firstFile = files[0];
-
-    if (!firstFile) {
-      return (
-        <div className="w-full h-full flex items-center justify-center p-2 text-gray-500 text-xs italic">
-          파일 없음
-        </div>
-      );
-    }
-
-    const fileName = firstFile.name || firstFile || "파일";
-
-    return (
-      <div className="w-full h-full flex items-center justify-center p-1 relative">
-        <div className="flex items-center gap-2 max-w-full">
-          <span className="text-base text-blue-500">📄</span>
-          <span className="text-xs text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap max-w-20">
-            {fileName}
-          </span>
-        </div>
-        {/* 여러 파일이 있을 때 개수 표시 */}
-        {files.length > 1 && (
-          <div className="absolute top-0.5 right-0.5 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold border-2 border-white">
-            +{files.length - 1}
-          </div>
-        )}
-      </div>
-    );
   };
 
   const columnDefs = [
@@ -514,7 +383,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           <div className="p-1 px-2 text-sm leading-relaxed text-gray-700 text-left flex items-center justify-start h-full w-full overflow-auto">
             <div
               dangerouslySetInnerHTML={createMarkup(detail)}
-              className="rich-text-preview w-full max-h-full"
+              className="rich-text-preview w-full max-h-full break-words overflow-y-auto leading-relaxed"
             />
           </div>
         );
@@ -689,12 +558,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
               </div>
             }
           >
-            <div
-              className="ag-theme-alpine w-full min-h-[500px]"
-              style={{
-                height: "calc(90vh - 250px)",
-              }}
-            >
+            <div className="ag-theme-alpine w-full min-h-[500px] h-[calc(90vh-250px)]">
               <AgGridReact
                 ref={gridRef}
                 modules={[ClientSideRowModelModule]}
@@ -837,6 +701,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           setIsDrawerVisible(false);
         }}
         open={isDrawerVisible}
+        className="p-0 h-full"
         styles={{
           body: {
             padding: 0,
@@ -844,11 +709,265 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           },
         }}
       >
-        <DrawerContent
-          selectedRow={selectedRow}
-          onSave={saveDrawerData}
-          ref={drawerRef}
-        />
+        {selectedRow && (
+          <div className="p-5 h-full overflow-auto">
+            {/* 상태 및 요약 */}
+            <div className="mb-5">
+              <h3 className="m-0 mb-3 text-gray-700 text-base font-semibold">
+                📊 상태 및 요약
+              </h3>
+              <div className="flex gap-4">
+                <div className="flex-none w-30">
+                  <Select
+                    value={localCurrentStatus}
+                    onChange={setLocalCurrentStatus}
+                    className="w-full"
+                  >
+                    <Select.Option value="pending">대기 중</Select.Option>
+                    <Select.Option value="in_progress">진행 중</Select.Option>
+                    <Select.Option value="completed">완료</Select.Option>
+                    <Select.Option value="blocked">차단됨</Select.Option>
+                  </Select>
+                </div>
+                <div className="flex-1">
+                  <Input
+                    value={localSummaryContent}
+                    onChange={(e) => setLocalSummaryContent(e.target.value)}
+                    placeholder="Summary를 입력해주세요"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 날짜 설정 */}
+            <div className="mb-5">
+              <h3 className="m-0 mb-3 text-gray-700 text-base font-semibold">
+                📅 날짜 설정
+              </h3>
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <DatePicker
+                    value={localStartDate ? dayjs(localStartDate) : null}
+                    onChange={(date) =>
+                      setLocalStartDate(date ? date.format("YYYY-MM-DD") : "")
+                    }
+                    className="w-full"
+                    placeholder="시작일 선택"
+                  />
+                </div>
+                <div className="flex-1">
+                  <DatePicker
+                    value={localEndDate ? dayjs(localEndDate) : null}
+                    onChange={(date) =>
+                      setLocalEndDate(date ? date.format("YYYY-MM-DD") : "")
+                    }
+                    className="w-full"
+                    placeholder="종료일 선택"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 이슈 상세 내용 */}
+            <div className="mb-5">
+              <h3 className="m-0 mb-3 text-gray-700 text-base font-semibold">
+                📝 Issue 상세내용
+              </h3>
+              <ReactQuill
+                value={localIssueContent}
+                onChange={setLocalIssueContent}
+                modules={quillModules}
+                formats={quillFormats}
+                className="h-50 mb-12"
+                placeholder="이슈 상세 내용을 입력하세요..."
+              />
+            </div>
+
+            {/* 이미지 업로드 영역 */}
+            <div className="mb-5">
+              <h3 className="m-0 mb-3 text-gray-700 text-base font-semibold">
+                🖼️ 첨부 이미지
+              </h3>
+              <div className="border border-gray-300 rounded-lg p-4 text-center bg-white transition-all duration-300 min-h-64">
+                <Upload.Dragger
+                  name="image"
+                  accept="image/*"
+                  showUploadList={false}
+                  beforeUpload={(file) => {
+                    const isLt5M = file.size / 1024 / 1024 < 5;
+                    if (!isLt5M) {
+                      message.error("이미지는 5MB보다 작아야 합니다!");
+                      return false;
+                    }
+                    if (!file.type.startsWith("image/")) {
+                      message.error("이미지 파일만 업로드 가능합니다!");
+                      return false;
+                    }
+                    const uploadedImageUrl = URL.createObjectURL(file);
+                    setLocalImageUrls((prev) => [...prev, uploadedImageUrl]);
+                    message.success(
+                      `${file.name} 이미지가 성공적으로 추가되었습니다.`
+                    );
+                    return false;
+                  }}
+                  className="border-none bg-transparent p-0"
+                >
+                  {localImageUrls.length > 0 ? (
+                    <Image.PreviewGroup>
+                      <div
+                        className="grid grid-cols-auto-fill gap-2 w-full"
+                        style={{
+                          gridTemplateColumns:
+                            "repeat(auto-fill, minmax(200px, 1fr))",
+                        }}
+                      >
+                        {localImageUrls.map((imageUrl, index) => (
+                          <div
+                            key={index}
+                            className="relative border border-gray-200 rounded-lg overflow-hidden bg-white"
+                          >
+                            <Image
+                              src={imageUrl}
+                              alt={`이슈 이미지 ${index + 1}`}
+                              className="w-full h-36 object-cover"
+                            />
+                            <Button
+                              type="primary"
+                              danger
+                              size="small"
+                              className="absolute top-2 right-2 rounded-full w-7 h-7 flex items-center justify-center text-xs p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLocalImageUrls((prev) =>
+                                  prev.filter((_, i) => i !== index)
+                                );
+                              }}
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </Image.PreviewGroup>
+                  ) : (
+                    <div className="p-5">
+                      <div className="text-5xl mb-4">📁</div>
+                      <div className="text-base font-semibold mb-2 text-gray-700">
+                        이미지를 드래그하여 업로드
+                      </div>
+                      <div className="text-sm text-gray-500 mb-4">
+                        또는 클릭하여 파일 선택
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        지원 형식: JPG, PNG, GIF (최대 5MB)
+                      </div>
+                    </div>
+                  )}
+                </Upload.Dragger>
+              </div>
+            </div>
+
+            {/* 첨부 파일 영역 */}
+            <div className="mb-5">
+              <h3 className="m-0 mb-3 text-gray-700 text-base font-semibold">
+                📄 첨부 파일
+              </h3>
+              <div className="border border-gray-300 rounded-lg p-4 bg-white min-h-44">
+                <Upload.Dragger
+                  name="file"
+                  accept="*/*"
+                  showUploadList={false}
+                  beforeUpload={(file) => {
+                    const isLt10M = file.size / 1024 / 1024 < 10;
+                    if (!isLt10M) {
+                      message.error("파일은 10MB보다 작아야 합니다!");
+                      return false;
+                    }
+                    const uploadedFileUrl = URL.createObjectURL(file);
+                    const fileWithName = {
+                      url: uploadedFileUrl,
+                      name: file.name,
+                      size: file.size,
+                      type: file.type,
+                    };
+                    setLocalFileUrls((prev) => [...prev, fileWithName]);
+                    message.success(`${file.name} 파일이 업로드되었습니다.`);
+                    return false;
+                  }}
+                  className="border-none bg-transparent"
+                >
+                  {localFileUrls.length > 0 ? (
+                    <div className="flex flex-col gap-3">
+                      {localFileUrls.map((fileUrl, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 border border-gray-200 rounded-md"
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            <span className="text-xl text-blue-500">📄</span>
+                            <span className="text-sm font-medium text-gray-700 break-all">
+                              {fileUrl.name || `파일 ${index + 1}`}
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              type="link"
+                              size="small"
+                              onClick={() => {
+                                const link = document.createElement("a");
+                                link.href = fileUrl.url || fileUrl;
+                                link.download =
+                                  fileUrl.name || `file_${index + 1}`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }}
+                            >
+                              다운로드
+                            </Button>
+                            <Button
+                              danger
+                              size="small"
+                              className="rounded-full w-7 h-7 text-xs p-0"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLocalFileUrls((prev) =>
+                                  prev.filter((_, i) => i !== index)
+                                );
+                              }}
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className="text-5xl mb-4">📁</div>
+                      <div className="text-base font-semibold text-gray-700">
+                        파일을 드래그하여 업로드
+                      </div>
+                      <div className="text-sm text-gray-500 mb-4">
+                        또는 클릭하여 파일 선택
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        모든 파일 형식 지원 (최대 10MB)
+                      </div>
+                    </div>
+                  )}
+                </Upload.Dragger>
+              </div>
+            </div>
+
+            {/* 저장 버튼 */}
+            <div className="text-center mt-5">
+              <Button type="primary" size="large" onClick={saveDrawerData}>
+                💾 저장
+              </Button>
+            </div>
+          </div>
+        )}
       </Drawer>
     </>
   );

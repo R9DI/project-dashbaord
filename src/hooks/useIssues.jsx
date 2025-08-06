@@ -60,16 +60,3 @@ export const useUpdateIssue = () => {
     },
   });
 };
-
-// 이슈 삭제
-export const useDeleteIssue = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id) => issueApi.deleteIssue(id),
-    onSuccess: () => {
-      // 이슈 목록 캐시 무효화
-      queryClient.invalidateQueries({ queryKey: ["issues"] });
-    },
-  });
-};

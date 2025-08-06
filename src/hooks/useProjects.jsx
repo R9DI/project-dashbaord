@@ -21,16 +21,3 @@ export const useAddProject = () => {
     },
   });
 };
-
-// 프로젝트 삭제
-export const useDeleteProject = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id) => projectApi.deleteProject(id),
-    onSuccess: () => {
-      // 프로젝트 목록 캐시 무효화
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-    },
-  });
-};

@@ -25,7 +25,6 @@ function App() {
           <p className="m-0 text-lg opacity-90 md:text-xl">
             Manage issues and track project progress
           </p>
-          <p className="m-0 text-lg opacity-90 md:text-xl">안녕</p>
         </header>
 
         <main className="max-w-6xl mx-auto px-5 md:px-20">

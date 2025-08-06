@@ -102,11 +102,6 @@ export const issueApi = {
     await delay(300);
     return { id: Date.now(), ...data };
   },
-
-  // 이슈 삭제
-  deleteIssue: async (id) => {
-    await delay(200);
-  },
 };
 
 // 프로젝트 데이터 API
@@ -182,10 +177,5 @@ export const projectApi = {
   addProject: async (data) => {
     await delay(300);
     return { id: Date.now(), ...data };
-  },
-
-  // 프로젝트 삭제
-  deleteProject: async (id) => {
-    await delay(200);
   },
 };

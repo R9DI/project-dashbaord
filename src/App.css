@@ -4,21 +4,43 @@
   padding: 0 !important;
   line-height: 1.4 !important;
 }
+
+.rich-text-preview p:last-child {
+  margin-bottom: 0 !important;
+}
+
 .rich-text-preview div,
 .rich-text-preview span {
   margin: 0 !important;
   padding: 0 !important;
   line-height: 1.4 !important;
 }
+
 .rich-text-preview ul,
 .rich-text-preview ol {
-  margin: 0 !important;
+  margin: 0 0 8px 0 !important;
   padding-left: 16px !important;
 }
+
 .rich-text-preview li {
-  margin: 0 !important;
+  margin: 0 0 4px 0 !important;
   padding: 0 !important;
   line-height: 1.4 !important;
+}
+
+.rich-text-preview {
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-y: auto;
+  max-height: 100%;
+  line-height: 1.4;
+}
+
+.rich-text-preview.truncated {
+  display: -webkit-box;
+  -webkit-line-clamp: 9;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* AG Grid Cell Classes */
@@ -75,42 +97,4 @@
 .ag-cell[col-id="issue"] {
   align-items: center !important;
   vertical-align: middle !important;
-}
-
-/* Rich Text Preview 스크롤 스타일 */
-.rich-text-preview {
-  word-wrap: break-word;
-  word-break: break-word;
-  overflow-y: auto;
-  max-height: 100%;
-  line-height: 1.4;
-}
-
-.rich-text-preview p {
-  margin: 0 0 8px 0 !important;
-  padding: 0 !important;
-  line-height: 1.4 !important;
-}
-
-.rich-text-preview p:last-child {
-  margin-bottom: 0 !important;
-}
-
-.rich-text-preview ul,
-.rich-text-preview ol {
-  margin: 0 0 8px 0 !important;
-  padding-left: 16px !important;
-}
-
-.rich-text-preview li {
-  margin: 0 0 4px 0 !important;
-  padding: 0 !important;
-  line-height: 1.4 !important;
-}
-
-.rich-text-preview.truncated {
-  display: -webkit-box;
-  -webkit-line-clamp: 9;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
