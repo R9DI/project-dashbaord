@@ -692,7 +692,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 fontSize: "13px",
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "center",
                 height: "100%",
+                width: "100%",
               }}
             >
               내용 없음
@@ -700,35 +702,121 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           );
         }
 
+        // HTML 태그를 분석하여 줄 수 계산
+        const calculateRichTextLines = (htmlContent) => {
+          if (!htmlContent) return 0;
+          const lineBreakTags = [
+            "<p>",
+            "<li>",
+            "<br>",
+            "<div>",
+            "<h1>",
+            "<h2>",
+            "<h3>",
+            "<h4>",
+            "<h5>",
+            "<h6>",
+          ];
+          let lineCount = 0;
+          lineBreakTags.forEach((tag) => {
+            const regex = new RegExp(tag, "gi");
+            const matches = htmlContent.match(regex);
+            if (matches) {
+              lineCount += matches.length;
+            }
+          });
+          const brMatches = htmlContent.match(/<br\s*\/?>/gi);
+          if (brMatches) {
+            lineCount += brMatches.length;
+          }
+          return Math.max(lineCount, 1);
+        };
+
+        const totalLines = calculateRichTextLines(detail);
+        const maxDisplayLines = 9; // 최대 표시 줄 수
+
         // HTML 태그를 그대로 렌더링
         const createMarkup = (htmlContent) => {
           return { __html: htmlContent };
         };
 
+        // 10줄 이상일 때 생략 표시
+        if (totalLines > 10) {
+          return (
+            <div
+              style={{
+                padding: "4px 8px",
+                fontSize: "13px",
+                lineHeight: "1.4",
+                color: "#333",
+                textAlign: "left",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                justifyContent: "center",
+                height: "100%",
+                width: "100%",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  color: "#666",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  marginBottom: "2px",
+                }}
+              >
+                ...
+              </div>
+              <div
+                dangerouslySetInnerHTML={createMarkup(detail)}
+                className="rich-text-preview"
+                style={{
+                  width: "100%",
+                  maxHeight: "100%",
+                  overflow: "hidden",
+                  display: "-webkit-box",
+                  WebkitLineClamp: maxDisplayLines,
+                  WebkitBoxOrient: "vertical",
+                }}
+              />
+            </div>
+          );
+        }
+
+        // 10줄 이하일 때는 그대로 표시
         return (
           <div
             style={{
-              padding: "8px",
+              padding: "4px 8px",
               fontSize: "13px",
-              lineHeight: "1.0",
+              lineHeight: "1.4",
               color: "#333",
-              maxHeight: "60px",
-              overflow: "hidden",
               textAlign: "left",
               display: "flex",
               alignItems: "center",
+              justifyContent: "flex-start",
               height: "100%",
+              width: "100%",
+              overflow: "hidden",
             }}
           >
             <div
               dangerouslySetInnerHTML={createMarkup(detail)}
               className="rich-text-preview"
+              style={{
+                width: "100%",
+                maxHeight: "100%",
+                overflow: "hidden",
+              }}
             />
           </div>
         );
       },
       cellStyle: {
         padding: "8px",
+        fontSize: "13px",
         display: "flex",
         alignItems: "center",
       },
@@ -1018,18 +1106,22 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                   // 상세 내용의 줄 수만 계산
                   const totalLines = calculateRichTextLines(detail);
 
+                  // 10줄 이상일 때는 10줄로 고정
+                  const displayLines = totalLines > 10 ? 10 : totalLines;
+
                   // 25px * 줄수 + 5px 패딩
                   const lineHeight = 25; // 한 줄 높이
                   const padding = 5; // 패딩
-                  const finalHeight = lineHeight * totalLines + padding;
+                  const finalHeight = lineHeight * displayLines + padding;
 
                   // 디버깅을 위한 콘솔 출력
                   console.log(`Row ${params.data?.id}:`, {
                     detail: detail.substring(0, 100) + "...",
                     totalLines,
+                    displayLines,
                     finalHeight,
                     detailLength: detail.length,
-                    htmlContent: detail,
+                    isTruncated: totalLines > 10,
                   });
 
                   return Math.max(finalHeight, 80); // 최소 높이 보장

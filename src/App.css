@@ -46,12 +46,24 @@ main {
 }
 .rich-text-preview p {
   margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.4 !important;
 }
 .rich-text-preview div,
 .rich-text-preview span {
   margin: 0 !important;
   padding: 0 !important;
-  line-height: 1.2 !important;
+  line-height: 1.4 !important;
+}
+.rich-text-preview ul,
+.rich-text-preview ol {
+  margin: 0 !important;
+  padding-left: 16px !important;
+}
+.rich-text-preview li {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.4 !important;
 }
 
 /* AG Grid Cell Classes */
@@ -80,4 +92,39 @@ main {
 .cell-low-score {
   background-color: #f44336 !important;
   color: white !important;
+}
+
+/* AG Grid 셀 중앙 정렬 오버라이드 */
+.ag-cell {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  vertical-align: middle !important;
+}
+
+.ag-cell-value {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  height: 100% !important;
+  vertical-align: middle !important;
+}
+
+/* detail 컬럼 특별 스타일 */
+.ag-cell[col-id="detail"] {
+  align-items: center !important;
+  vertical-align: middle !important;
+}
+
+/* 텍스트 생략 스타일 */
+.rich-text-preview {
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.rich-text-preview.truncated {
+  display: -webkit-box;
+  -webkit-line-clamp: 9;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
