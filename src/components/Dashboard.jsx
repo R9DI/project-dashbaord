@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry } from "ag-grid-community";
 import { ClientSideRowModelModule } from "ag-grid-community";
@@ -12,7 +12,14 @@ import {
 } from "@ant-design/icons";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
-import { defaultColorSettings, getColorClass } from "../config/colorSettings";
+import { getColorClass } from "../utils/colorUtils";
+import {
+  useProjects,
+  useAddProject,
+  useDeleteProject,
+} from "../hooks/useProjects";
+import { useColorSettingsStore } from "../stores/colorSettingsStore";
+import { useModalStore } from "../stores/modalStore";
 
 // Register the required feature modules with the Grid
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
@@ -22,55 +29,26 @@ import ColorSettingsModal from "./ColorSettingsModal";
 const { Text } = Typography;
 
 const Dashboard = () => {
-  const [rowData, setRowData] = useState([]);
-  const [isSettingsModalVisible, setIsSettingsModalVisible] = useState(false);
-  const [isIssueModalVisible, setIsIssueModalVisible] = useState(false);
-  const [selectedRowData, setSelectedRowData] = useState(null);
   const [selectedRows, setSelectedRows] = useState([]);
   const gridRef = useRef(null);
-  const [colorSettings, setColorSettings] = useState(defaultColorSettings);
 
-  // 랜덤 값 생성 함수
-  const generateRandomValue = (min, max) => {
-    return Math.round((Math.random() * (max - min) + min) * 100) / 100;
-  };
+  // React Query hooks
+  const { data: rowData = [], isLoading, refetch } = useProjects();
+  const addProjectMutation = useAddProject();
+  const deleteProjectMutation = useDeleteProject();
 
-  // 랜덤 프로젝트명 생성
-  const projectNames = [
-    "5G 네트워크 최적화",
-    "AI 기반 품질 검사",
-    "IoT 센서 데이터 분석",
-    "클라우드 마이그레이션",
-    "보안 인증 시스템",
-    "자율주행 알고리즘",
-    "블록체인 거래 시스템",
-    "머신러닝 모델 개발",
-    "모바일 앱 최적화",
-    "웹 서비스 확장",
-    "데이터베이스 성능 개선",
-    "API 게이트웨이 구축",
-    "마이크로서비스 아키텍처",
-    "DevOps 파이프라인 구축",
-    "사용자 인터페이스 개선",
-  ];
-
-  const remarks = [
-    "정상 진행 중",
-    "일정 지연 발생",
-    "테스트 완료",
-    "기술적 난제 해결 중",
-    "배포 준비 중",
-    "품질 이슈 발생",
-    "코드 리뷰 진행 중",
-    "성능 최적화 중",
-    "보안 검토 완료",
-    "사용자 테스트 진행",
-    "버그 수정 중",
-    "문서화 작업 중",
-    "팀 협업 진행",
-    "외부 의존성 업데이트",
-    "모니터링 시스템 구축",
-  ];
+  // Zustand stores
+  const { colorSettings, setColorSettings } = useColorSettingsStore();
+  const {
+    isIssueModalVisible,
+    isColorSettingsModalVisible,
+    selectedRowData,
+    openIssueModal,
+    closeIssueModal,
+    openColorSettingsModal,
+    closeColorSettingsModal,
+    setSelectedRowData,
+  } = useModalStore();
 
   // 빈 행 생성
   const generateEmptyRow = () => {
@@ -85,41 +63,6 @@ const Dashboard = () => {
       finalScore: 0,
       remark: "",
     };
-  };
-
-  // 샘플 데이터 생성
-  const generateSampleData = () => {
-    const data = [];
-    const numProjects = Math.floor(Math.random() * 5) + 4; // 4-8개 프로젝트
-
-    for (let i = 1; i <= numProjects; i++) {
-      const inlinePassRate = generateRandomValue(0.6, 0.98);
-      const elecPassRate = generateRandomValue(0.6, 0.98);
-      const issueResponseIndex = generateRandomValue(0.6, 0.98);
-      const wipAchievementRate = generateRandomValue(0.6, 0.98);
-      const deadlineAchievementRate = generateRandomValue(0.6, 0.98);
-      const finalScore =
-        inlinePassRate *
-        elecPassRate *
-        issueResponseIndex *
-        wipAchievementRate *
-        deadlineAchievementRate;
-
-      data.push({
-        id: i,
-        projectName:
-          projectNames[Math.floor(Math.random() * projectNames.length)],
-        inlinePassRate,
-        elecPassRate,
-        issueResponseIndex,
-        wipAchievementRate,
-        deadlineAchievementRate,
-        finalScore,
-        remark: remarks[Math.floor(Math.random() * remarks.length)],
-      });
-    }
-
-    return data;
   };
 
   // 셀 스타일 결정 함수
@@ -191,7 +134,7 @@ const Dashboard = () => {
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedRowData(params.data);
-                  setIsIssueModalVisible(true);
+                  openIssueModal();
                 }}
               >
                 🔧
@@ -236,32 +179,39 @@ const Dashboard = () => {
   const handleSettingsSave = (values) => {
     console.log("Settings saved:", values);
     setColorSettings(values);
-    setIsSettingsModalVisible(false);
+    closeColorSettingsModal();
   };
 
   // 새 데이터 추가
   const addNewData = () => {
     const newRow = generateEmptyRow();
-    setRowData((prevData) => [...prevData, newRow]);
+    addProjectMutation.mutate(newRow, {
+      onSuccess: () => {
+        message.success("새 행이 추가되었습니다!");
+      },
+      onError: () => {
+        message.error("행 추가에 실패했습니다!");
+      },
+    });
   };
 
   // 단일 행 삭제
   const deleteRow = (rowId) => {
-    setRowData((prevData) => prevData.filter((row) => row.id !== rowId));
-    message.success("행이 삭제되었습니다.");
+    deleteProjectMutation.mutate(rowId, {
+      onSuccess: () => {
+        message.success("행이 삭제되었습니다!");
+      },
+      onError: () => {
+        message.error("행 삭제에 실패했습니다!");
+      },
+    });
   };
 
   // 데이터 새로고침
   const refreshData = () => {
-    const newData = generateSampleData();
-    setRowData(newData);
+    refetch();
+    message.success("데이터가 새로고침되었습니다!");
   };
-
-  // 초기 데이터 로드
-  useEffect(() => {
-    const initialData = generateSampleData();
-    setRowData(initialData);
-  }, []);
 
   // 통계 계산 함수
   const getStatistics = () => {
@@ -382,13 +332,12 @@ const Dashboard = () => {
             <Button icon={<ReloadOutlined />} onClick={refreshData}>
               데이터 새로고침
             </Button>
-            <ColorSettingsModal
-              isVisible={isSettingsModalVisible}
-              onCancel={() => setIsSettingsModalVisible(false)}
-              onSave={handleSettingsSave}
-              initialValues={colorSettings}
-              onOpen={() => setIsSettingsModalVisible(true)}
-            />
+            <Button
+              onClick={openColorSettingsModal}
+              style={{ marginLeft: "8px" }}
+            >
+              색상 설정
+            </Button>
           </Space>
         </div>
 
@@ -425,8 +374,16 @@ const Dashboard = () => {
       {/* Issue Modal */}
       <IssueModal
         isVisible={isIssueModalVisible}
-        onClose={() => setIsIssueModalVisible(false)}
-        data={selectedRowData} // Pass selectedRowData to the modal
+        onClose={closeIssueModal}
+        data={selectedRowData}
+      />
+
+      {/* Color Settings Modal */}
+      <ColorSettingsModal
+        isVisible={isColorSettingsModalVisible}
+        onCancel={closeColorSettingsModal}
+        onSave={handleSettingsSave}
+        initialValues={colorSettings}
       />
     </>
   );

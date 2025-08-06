@@ -28,12 +28,18 @@ import { UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
+import { useIssues, useAddIssue, useUpdateIssue } from "../hooks/useIssues";
 
 // Register the required feature modules with the Grid
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 import { PlusOutlined } from "@ant-design/icons";
 
 const IssueModal = ({ isVisible, onClose, data }) => {
+  // React Query hooks
+  const { data: issues = [], isLoading, refetch } = useIssues();
+  const addIssueMutation = useAddIssue();
+  const updateIssueMutation = useUpdateIssue();
+
   // 리치 에디터 설정
   const quillModules = {
     toolbar: [
@@ -84,131 +90,79 @@ const IssueModal = ({ isVisible, onClose, data }) => {
   // 드로워에서 데이터 저장 함수
   const saveDrawerData = (localData) => {
     if (selectedRow && localData) {
-      setRowData((prevData) =>
-        prevData.map((row) =>
-          row.id === selectedRow.id
-            ? {
-                ...row,
-                detail: localData.issueContent,
-                summary: localData.summaryContent,
-                status: localData.currentStatus,
-                img: localData.imageUrls, // 이미지 URL 배열 업데이트
-                file: localData.fileUrls, // 첨부파일 URL 배열 업데이트
-                start: localData.startDate, // 시작일 업데이트
-                end: localData.endDate, // 종료일 업데이트
-              }
-            : row
-        )
-      );
-      message.success("변경사항이 저장되었습니다!");
-      setIsDrawerVisible(false);
+      const updatedData = {
+        ...selectedRow,
+        detail: localData.issueContent,
+        summary: localData.summaryContent,
+        status: localData.currentStatus,
+        img: localData.imageUrls, // 이미지 URL 배열 업데이트
+        file: localData.fileUrls, // 첨부파일 URL 배열 업데이트
+        start: localData.startDate, // 시작일 업데이트
+        end: localData.endDate, // 종료일 업데이트
+      };
 
-      // AG Grid의 행 높이를 다시 계산
-      setTimeout(() => {
-        if (gridRef.current && gridRef.current.api) {
-          gridRef.current.api.resetRowHeights();
+      updateIssueMutation.mutate(
+        { id: selectedRow.id, data: updatedData },
+        {
+          onSuccess: () => {
+            message.success("변경사항이 저장되었습니다!");
+            setIsDrawerVisible(false);
+
+            // AG Grid의 행 높이를 다시 계산
+            setTimeout(() => {
+              if (gridRef.current && gridRef.current.api) {
+                console.log("Attempting to reset row heights...");
+
+                // 특정 행의 높이만 재계산
+                const rowNode = gridRef.current.api.getRowNode(selectedRow.id);
+                if (rowNode) {
+                  console.log(
+                    "Resetting specific row height for:",
+                    selectedRow.id
+                  );
+                  gridRef.current.api.resetRowHeights([rowNode]);
+                }
+
+                // 전체 행 높이 재계산
+                console.log("Resetting all row heights");
+                gridRef.current.api.resetRowHeights();
+
+                // 그리드 리프레시
+                gridRef.current.api.refreshCells();
+
+                // 강제로 다시 계산
+                setTimeout(() => {
+                  if (gridRef.current && gridRef.current.api) {
+                    gridRef.current.api.resetRowHeights();
+                    gridRef.current.api.refreshCells();
+                  }
+                }, 100);
+              }
+            }, 300);
+          },
+          onError: () => {
+            message.error("저장에 실패했습니다!");
+          },
         }
-      }, 100);
+      );
     }
   };
 
-  const initialData = [
-    {
-      id: 1,
-      issue: "로그인 기능 오류",
-      summary: "로그인 시 500 에러 발생",
-      status: "in-progress",
-      img: "https://dummyimage.com/800x300/4A90E2/FFFFFF.png&text=Login+Error", // 가로가 매우 긴 이미지
-      detail: "500 에러 발생\n데이터베이스 연결 문제\n인증 시스템 불안정",
-      start: "2025-06-01",
-      end: "2025-06-05",
-      file: "login_bug_report.pdf",
-      progress:
-        "로그인 오류 수정 완료\n데이터베이스 연결 문제 해결\n사용자 인증 시스템 안정화 완료",
-    },
-    {
-      id: 2,
-      issue: "UI 반응형 개선",
-      summary: "모바일 메뉴 표시 문제",
-      status: "pending",
-      img: "https://dummyimage.com/300x800/50C878/FFFFFF.png&text=UI+Design", // 세로가 매우 긴 이미지
-      detail: "모바일 메뉴 표시 오류\nCSS 미디어 쿼리 수정\n일관된 UI 제공",
-      start: "2025-06-03",
-      end: "2025-07-08",
-      file: "ui_improvement.pdf",
-      progress:
-        "모바일 메뉴 디자인 개선 중\nCSS 미디어 쿼리 수정 진행\n다양한 디바이스 테스트 예정",
-    },
-    {
-      id: 3,
-      issue: "성능 테스트 필요",
-      summary: "대용량 데이터 처리 속도 저하",
-      status: "blocked",
-      img: "https://dummyimage.com/100x100/FF6B6B/FFFFFF.png&text=Test", // 정사각형 이미지
-      detail: "대용량 데이터 처리 속도 저하\n쿼리 최적화 필요\n캐싱 전략 검토",
-      start: "2025-06-05",
-      end: "2025-07-12",
-      file: "performance_test.pdf",
-      progress:
-        "성능 테스트 계획 수립 중\n테스트 환경 구성 검토\n테스트 케이스 작성 진행",
-    },
-    {
-      id: 4,
-      issue: "XSS 취약점 패치",
-      summary: "XSS 공격 취약점 발견",
-      status: "completed",
-      img: "https://dummyimage.com/400x600/FF8C00/FFFFFF.png&text=Security", // 세로가 긴 이미지
-      detail: "XSS 공격 취약점\n입력값 검증 강화\nHTML 인코딩 적용",
-      start: "2025-06-10",
-      end: "2025-07-15",
-      file: "security_patch.pdf",
-      progress:
-        "XSS 취약점 분석 완료\n입력값 검증 로직 개발 중\n보안 테스트 계획 수립",
-    },
-    {
-      id: 5,
-      issue: "서버 확장성 개선",
-      summary: "서버 부하 문제 해결",
-      status: "in-progress",
-      img: "https://dummyimage.com/600x200/9B59B6/FFFFFF.png&text=Infrastructure", // 가로가 긴 이미지
-      detail: "서버 부하 문제\n로드 밸런서 도입\nCDN 검토",
-      start: "2025-06-12",
-      end: "2025-07-20",
-      file: "infrastructure_upgrade.pdf",
-      progress:
-        "서버 부하 분석 완료\n로드 밸런서 도입 계획 수립\nCDN 서비스 비교 검토 중",
-    },
-    {
-      id: 6,
-      issue: "페이지 로딩 속도 개선",
-      summary: "페이지 로딩 3초 초과 문제",
-      status: "pending",
-      img: "https://dummyimage.com/200x400/3498DB/FFFFFF.png&text=UX+Speed", // 세로가 긴 이미지
-      detail: "페이지 로딩 3초 초과\n이미지 최적화\n웹팩 설정 최적화",
-      start: "2025-07-01",
-      end: "2025-07-25",
-      file: "performance_optimization.pdf",
-      progress:
-        "페이지 로딩 속도 측정 완료\n이미지 최적화 작업 시작\n웹팩 설정 분석 중",
-    },
-  ];
-
   // 날짜 기준으로 정렬된 데이터 생성 (마지막 날짜가 맨 위로)
-  const sortedData = [...initialData].sort((a, b) => {
-    // end 날짜가 없으면 start 날짜로 비교
-    const dateA = a.end || a.start;
-    const dateB = b.end || b.start;
+  const sortedIssues = useMemo(() => {
+    return [...issues].sort((a, b) => {
+      // end 날짜가 없으면 start 날짜로 비교
+      const dateA = a.end || a.start;
+      const dateB = b.end || b.start;
 
-    if (!dateA && !dateB) return 0;
-    if (!dateA) return 1; // dateA가 없으면 뒤로
-    if (!dateB) return -1; // dateB가 없으면 뒤로
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1; // dateA가 없으면 뒤로
+      if (!dateB) return -1; // dateB가 없으면 뒤로
 
-    // 날짜 문자열을 Date 객체로 변환하여 비교 (내림차순)
-    return new Date(dateB) - new Date(dateA);
-  });
-
-  const [rowData, setRowData] = useState(sortedData);
-  const [originalData] = useState(sortedData); // 원본 데이터 보존
+      // 날짜 문자열을 Date 객체로 변환하여 비교 (내림차순)
+      return new Date(dateB) - new Date(dateA);
+    });
+  }, [issues]);
 
   // 현재 월에 진행 중인지 확인하는 함수
   const isCurrentMonthActive = (item) => {
@@ -265,12 +219,10 @@ const IssueModal = ({ isVisible, onClose, data }) => {
   };
 
   const addNewIssue = () => {
-    const newId = Math.max(...rowData.map((row) => row.id), 0) + 1;
     const today = dayjs().format("YYYY-MM-DD");
     const nextWeek = dayjs().add(7, "day").format("YYYY-MM-DD"); // 오늘부터 7일 후
 
     const newIssue = {
-      id: newId,
       issue: "새 이슈",
       summary: "",
       status: "pending",
@@ -281,8 +233,15 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       file: "",
       progress: "계획 단계",
     };
-    setRowData((prevData) => [newIssue, ...prevData]);
-    message.success("새 이슈가 추가되었습니다!");
+
+    addIssueMutation.mutate(newIssue, {
+      onSuccess: () => {
+        message.success("새 이슈가 추가되었습니다!");
+      },
+      onError: () => {
+        message.error("이슈 추가에 실패했습니다!");
+      },
+    });
   };
 
   // 이미지 표시 셀 렌더러 (읽기 전용)
@@ -969,12 +928,12 @@ const IssueModal = ({ isVisible, onClose, data }) => {
             <div>
               <div
                 style={{
-                  height: `${Math.max(rowData.length * 28 + 80, 180)}px`,
+                  height: `${Math.max(sortedIssues.length * 28 + 80, 180)}px`,
                   minHeight: "180px",
                   maxHeight: "400px",
                 }}
               >
-                <GanttChart issueData={rowData} />
+                <GanttChart issueData={sortedIssues} />
               </div>
               <GanttLegend />
             </div>
@@ -998,7 +957,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                     fontWeight: "600",
                   }}
                 >
-                  📋 전체 이슈 목록 ({rowData.length}개)
+                  📋 전체 이슈 목록 ({sortedIssues.length}개)
                 </div>
                 <Button
                   type="primary"
@@ -1034,10 +993,14 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 ref={gridRef}
                 modules={[ClientSideRowModelModule]}
                 columnDefs={columnDefs}
-                rowData={rowData}
-                rowHeight={80}
+                rowData={sortedIssues}
                 getRowHeight={(params) => {
                   const detail = params.data?.detail || "";
+                  console.log(
+                    `getRowHeight called for row ${params.data?.id}, detail:`,
+                    detail
+                  );
+
                   if (!detail) return 80; // 기본 높이
 
                   // HTML 태그를 제거하고 실제 텍스트 내용만 추출
@@ -1062,7 +1025,15 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                   );
                   const extraHeight = extraLines * lineHeight;
 
-                  return baseHeight + extraHeight;
+                  const finalHeight = baseHeight + extraHeight;
+                  console.log(
+                    `Row ${params.data?.id}: detail="${detail.substring(
+                      0,
+                      50
+                    )}...", lines=${lines.length}, height=${finalHeight}`
+                  );
+
+                  return finalHeight;
                 }}
                 getRowStyle={(params) => {
                   // 이번 달에 진행 중인 항목은 하얀색 배경
@@ -1089,7 +1060,16 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 suppressRowClickSelection={false}
                 rowSelection="single"
                 animateRows={true}
+                suppressRowHeightResize={false}
                 onRowDoubleClicked={onRowClicked}
+                onRowDataUpdated={() => {
+                  // 데이터 업데이트 후 행 높이 재계산
+                  setTimeout(() => {
+                    if (gridRef.current && gridRef.current.api) {
+                      gridRef.current.api.resetRowHeights();
+                    }
+                  }, 100);
+                }}
                 // 기본 정렬 설정
                 defaultSortModel={[
                   { colId: "end", sort: "desc" }, // 종료일 기준 내림차순 (늦을수록 위로, 없으면 최상단)
