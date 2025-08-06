@@ -459,43 +459,15 @@ const GanttChart = ({ issueData = [] }) => {
 
   if (ganttData.length === 0) {
     return (
-      <div
-        style={{
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "#999",
-          fontSize: "16px",
-          backgroundColor: "#fafafa",
-          border: "1px solid #e8e8e8",
-          borderRadius: "8px",
-        }}
-      >
+      <div className="h-full flex items-center justify-center text-gray-400 text-base bg-gray-50 border border-gray-200 rounded-lg">
         📊 진행 중인 이슈가 없습니다
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        overflow: "auto",
-        backgroundColor: "#fff",
-        border: "1px solid #e8e8e8",
-        borderRadius: "8px",
-      }}
-    >
-      <svg
-        ref={svgRef}
-        style={{
-          width: "100%",
-          minHeight: "100%",
-          backgroundColor: "#fff",
-        }}
-      />
+    <div className="w-full h-full overflow-auto bg-white border border-gray-200 rounded-lg">
+      <svg ref={svgRef} className="w-full min-h-full bg-white" />
     </div>
   );
 };

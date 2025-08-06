@@ -235,72 +235,25 @@ const IssueModal = ({ isVisible, onClose, data }) => {
 
     if (!firstImageUrl) {
       return (
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "8px",
-            color: "#999",
-            fontSize: "12px",
-            fontStyle: "italic",
-          }}
-        >
+        <div className="w-full h-full flex items-center justify-center p-2 text-gray-500 text-xs italic">
           이미지 없음
         </div>
       );
     }
 
     return (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "4px",
-          position: "relative",
-        }}
-      >
+      <div className="w-full h-full flex items-center justify-center p-1 relative">
         <Image.PreviewGroup>
           <Image
             src={firstImageUrl}
             alt="이슈 이미지"
-            style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
-              width: "auto",
-              height: "auto",
-              objectFit: "contain",
-              borderRadius: "4px",
-              border: "1px solid #e8e8e8",
-            }}
+            className="max-w-full max-h-full w-auto h-auto object-contain rounded border border-gray-200"
             fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3Ik1RnG4W+FgYxN"
           />
         </Image.PreviewGroup>
         {/* 여러 이미지가 있을 때 개수 표시 */}
         {imageUrls.length > 1 && (
-          <div
-            style={{
-              position: "absolute",
-              top: "2px",
-              right: "2px",
-              backgroundColor: "#1890ff",
-              color: "white",
-              borderRadius: "50%",
-              width: "20px",
-              height: "20px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "10px",
-              fontWeight: "bold",
-              border: "2px solid white",
-            }}
-          >
+          <div className="absolute top-0.5 right-0.5 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold border-2 border-white">
             +{imageUrls.length - 1}
           </div>
         )}
@@ -315,15 +268,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
 
     return (
       <div
-        style={{
-          padding: "4px 8px",
-          fontSize: "13px",
-          color: startDate ? "#333" : "#999",
-          fontStyle: startDate ? "normal" : "italic",
-          display: "flex",
-          alignItems: "center",
-          height: "100%",
-        }}
+        className={`px-2 py-1 text-sm flex items-center h-full ${
+          startDate ? "text-gray-700" : "text-gray-500 italic"
+        }`}
       >
         {startDate || "미정"}
       </div>
@@ -337,15 +284,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
 
     return (
       <div
-        style={{
-          padding: "4px 8px",
-          fontSize: "13px",
-          color: endDate ? "#333" : "#999",
-          fontStyle: endDate ? "normal" : "italic",
-          display: "flex",
-          alignItems: "center",
-          height: "100%",
-        }}
+        className={`px-2 py-1 text-sm flex items-center h-full ${
+          endDate ? "text-gray-700" : "text-gray-500 italic"
+        }`}
       >
         {endDate || "미정"}
       </div>
@@ -362,7 +303,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       if (!text) return "";
       const lines = text.split("\n").filter((line) => line.trim() !== "");
       return lines.map((line, index) => (
-        <div key={index} style={{ marginBottom: "2px", lineHeight: "1.2" }}>
+        <div key={index} className="mb-0.5 leading-tight">
           • {line.trim()}
         </div>
       ));
@@ -370,15 +311,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
 
     return (
       <div
-        style={{
-          padding: "8px",
-          fontSize: "12px",
-          lineHeight: "1.4",
-          color: detail ? "#333" : "#999",
-          fontStyle: detail ? "normal" : "italic",
-          maxHeight: "60px",
-          overflow: "hidden",
-        }}
+        className={`p-2 text-xs leading-relaxed max-h-15 overflow-hidden ${
+          detail ? "text-gray-700" : "text-gray-500 italic"
+        }`}
       >
         {detail ? formatDetailText(detail) : "내용 없음"}
       </div>
@@ -392,15 +327,9 @@ const IssueModal = ({ isVisible, onClose, data }) => {
 
     return (
       <div
-        style={{
-          padding: "8px",
-          fontSize: "12px",
-          lineHeight: "1.4",
-          color: progress ? "#333" : "#999",
-          fontStyle: progress ? "normal" : "italic",
-          maxHeight: "60px",
-          overflow: "hidden",
-        }}
+        className={`p-2 text-xs leading-relaxed max-h-15 overflow-hidden flex items-center justify-center h-full ${
+          progress ? "text-gray-700" : "text-gray-500 italic"
+        }`}
       >
         {progress || "진행사항 없음"}
       </div>
@@ -421,19 +350,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
 
     if (!firstFile) {
       return (
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "8px",
-            color: "#999",
-            fontSize: "12px",
-            fontStyle: "italic",
-          }}
-        >
+        <div className="w-full h-full flex items-center justify-center p-2 text-gray-500 text-xs italic">
           파일 없음
         </div>
       );
@@ -442,59 +359,16 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     const fileName = firstFile.name || firstFile || "파일";
 
     return (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "4px",
-          position: "relative",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            maxWidth: "100%",
-          }}
-        >
-          <span style={{ fontSize: "16px", color: "#1890ff" }}>📄</span>
-          <span
-            style={{
-              fontSize: "12px",
-              color: "#333",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              maxWidth: "80px",
-            }}
-          >
+      <div className="w-full h-full flex items-center justify-center p-1 relative">
+        <div className="flex items-center gap-2 max-w-full">
+          <span className="text-base text-blue-500">📄</span>
+          <span className="text-xs text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap max-w-20">
             {fileName}
           </span>
         </div>
         {/* 여러 파일이 있을 때 개수 표시 */}
         {files.length > 1 && (
-          <div
-            style={{
-              position: "absolute",
-              top: "2px",
-              right: "2px",
-              backgroundColor: "#1890ff",
-              color: "white",
-              borderRadius: "50%",
-              width: "20px",
-              height: "20px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "10px",
-              fontWeight: "bold",
-              border: "2px solid white",
-            }}
-          >
+          <div className="absolute top-0.5 right-0.5 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold border-2 border-white">
             +{files.length - 1}
           </div>
         )}
@@ -508,6 +382,14 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       headerName: "아이템",
       editable: true,
       width: 150,
+      cellRenderer: (params) => {
+        const issue = params.value || "";
+        return (
+          <div className="w-full h-full flex items-center justify-center p-2 text-blue-500 font-bold text-sm">
+            {issue || "제목 없음"}
+          </div>
+        );
+      },
       cellStyle: {
         color: "#1890ff",
         fontWeight: "bold",
@@ -534,71 +416,24 @@ const IssueModal = ({ isVisible, onClose, data }) => {
 
         if (!firstImageUrl) {
           return (
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "8px",
-                color: "#999",
-                fontSize: "12px",
-                fontStyle: "italic",
-              }}
-            >
+            <div className="w-full h-full flex items-center justify-center p-2 text-gray-400 text-xs italic">
               이미지 없음
             </div>
           );
         }
 
         return (
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "4px",
-              position: "relative",
-            }}
-          >
+          <div className="w-full h-full flex items-center justify-center p-1 relative">
             <Image.PreviewGroup>
               <Image
                 src={firstImageUrl}
                 alt="이슈 이미지"
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                  width: "auto",
-                  height: "auto",
-                  objectFit: "contain",
-                  borderRadius: "4px",
-                  border: "1px solid #e8e8e8",
-                }}
+                className="max-w-full max-h-full w-auto h-auto object-contain rounded border border-gray-200"
                 fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3Ik1RnG4W+FgYxN"
               />
             </Image.PreviewGroup>
             {imageUrls.length > 1 && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "2px",
-                  right: "2px",
-                  backgroundColor: "#1890ff",
-                  color: "white",
-                  borderRadius: "50%",
-                  width: "20px",
-                  height: "20px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "10px",
-                  fontWeight: "bold",
-                  border: "2px solid white",
-                }}
-              >
+              <div className="absolute top-0.5 right-0.5 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold border-2 border-white">
                 +{imageUrls.length - 1}
               </div>
             )}
@@ -702,114 +537,18 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           );
         }
 
-        // HTML 태그를 분석하여 줄 수 계산
-        const calculateRichTextLines = (htmlContent) => {
-          if (!htmlContent) return 0;
-          const lineBreakTags = [
-            "<p>",
-            "<li>",
-            "<br>",
-            "<div>",
-            "<h1>",
-            "<h2>",
-            "<h3>",
-            "<h4>",
-            "<h5>",
-            "<h6>",
-          ];
-          let lineCount = 0;
-          lineBreakTags.forEach((tag) => {
-            const regex = new RegExp(tag, "gi");
-            const matches = htmlContent.match(regex);
-            if (matches) {
-              lineCount += matches.length;
-            }
-          });
-          const brMatches = htmlContent.match(/<br\s*\/?>/gi);
-          if (brMatches) {
-            lineCount += brMatches.length;
-          }
-          return Math.max(lineCount, 1);
-        };
-
-        const totalLines = calculateRichTextLines(detail);
-        const maxDisplayLines = 9; // 최대 표시 줄 수
-
         // HTML 태그를 그대로 렌더링
         const createMarkup = (htmlContent) => {
           return { __html: htmlContent };
         };
 
-        // 10줄 이상일 때 생략 표시
-        if (totalLines > 10) {
-          return (
-            <div
-              style={{
-                padding: "4px 8px",
-                fontSize: "13px",
-                lineHeight: "1.4",
-                color: "#333",
-                textAlign: "left",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                justifyContent: "center",
-                height: "100%",
-                width: "100%",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  color: "#666",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  marginBottom: "2px",
-                }}
-              >
-                ...
-              </div>
-              <div
-                dangerouslySetInnerHTML={createMarkup(detail)}
-                className="rich-text-preview"
-                style={{
-                  width: "100%",
-                  maxHeight: "100%",
-                  overflow: "hidden",
-                  display: "-webkit-box",
-                  WebkitLineClamp: maxDisplayLines,
-                  WebkitBoxOrient: "vertical",
-                }}
-              />
-            </div>
-          );
-        }
-
-        // 10줄 이하일 때는 그대로 표시
+        // 모든 경우에 스크롤로 표시
         return (
-          <div
-            style={{
-              padding: "4px 8px",
-              fontSize: "13px",
-              lineHeight: "1.4",
-              color: "#333",
-              textAlign: "left",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-start",
-              height: "100%",
-              width: "100%",
-              overflow: "hidden",
-            }}
-          >
+          <div className="p-1 px-2 text-sm leading-relaxed text-gray-700 text-left flex items-center justify-start h-full w-full overflow-auto">
             <div
               dangerouslySetInnerHTML={createMarkup(detail)}
-              className="rich-text-preview"
-              style={{
-                width: "100%",
-                maxHeight: "100%",
-                overflow: "hidden",
-              }}
+              className="rich-text-preview w-full"
+              style={{ maxHeight: "100%" }}
             />
           </div>
         );
@@ -1141,7 +880,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                   editable: false,
                   cellStyle: {
                     display: "flex",
-                    alignItems: "flex-start",
+                    alignItems: "center",
                     justifyContent: "flex-start",
                     padding: "4px",
                   },

@@ -9,39 +9,14 @@ const GanttLegend = () => {
   ];
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: "24px",
-        padding: "12px 16px",
-        backgroundColor: "#fafafa",
-        border: "1px solid #e8e8e8",
-        borderRadius: "6px",
-        marginTop: "12px",
-        fontSize: "12px",
-      }}
-    >
+    <div className="flex justify-center items-center gap-6 p-3 px-4 bg-gray-50 border border-gray-200 rounded-md mt-3 text-xs">
       {legendItems.map((item, index) => (
-        <div
-          key={index}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-          }}
-        >
+        <div key={index} className="flex items-center gap-1.5">
           <div
-            style={{
-              width: "12px",
-              height: "12px",
-              backgroundColor: item.color,
-              borderRadius: "2px",
-              border: "1px solid #d9d9d9",
-            }}
+            className="w-3 h-3 rounded border border-gray-300"
+            style={{ backgroundColor: item.color }}
           />
-          <span style={{ color: "#666", fontWeight: "500" }}>{item.label}</span>
+          <span className="text-gray-500 font-medium">{item.label}</span>
         </div>
       ))}
     </div>

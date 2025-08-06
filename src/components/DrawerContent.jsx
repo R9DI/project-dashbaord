@@ -111,25 +111,18 @@ const DrawerContent = forwardRef(({ selectedRow, onSave }, ref) => {
   }
 
   return (
-    <div style={{ padding: "20px", height: "100%", overflow: "auto" }}>
+    <div className="p-5 h-full overflow-auto">
       {/* 상태 및 요약 */}
-      <div style={{ marginBottom: "20px" }}>
-        <h3
-          style={{
-            margin: "0 0 12px 0",
-            color: "#333",
-            fontSize: "16px",
-            fontWeight: "600",
-          }}
-        >
+      <div className="mb-5">
+        <h3 className="m-0 mb-3 text-gray-700 text-base font-semibold">
           📊 상태 및 요약
         </h3>
-        <div style={{ display: "flex", gap: "16px" }}>
-          <div style={{ flex: "0 0 120px" }}>
+        <div className="flex gap-4">
+          <div className="flex-none w-30">
             <Select
               value={localCurrentStatus}
               onChange={setLocalCurrentStatus}
-              style={{ width: "100%" }}
+              className="w-full"
             >
               <Select.Option value="pending">대기 중</Select.Option>
               <Select.Option value="in_progress">진행 중</Select.Option>
@@ -137,7 +130,7 @@ const DrawerContent = forwardRef(({ selectedRow, onSave }, ref) => {
               <Select.Option value="blocked">차단됨</Select.Option>
             </Select>
           </div>
-          <div style={{ flex: 1 }}>
+          <div className="flex-1">
             <Input
               value={localSummaryContent}
               onChange={(e) => setLocalSummaryContent(e.target.value)}
@@ -148,35 +141,28 @@ const DrawerContent = forwardRef(({ selectedRow, onSave }, ref) => {
       </div>
 
       {/* 날짜 설정 */}
-      <div style={{ marginBottom: "20px" }}>
-        <h3
-          style={{
-            margin: "0 0 12px 0",
-            color: "#333",
-            fontSize: "16px",
-            fontWeight: "600",
-          }}
-        >
+      <div className="mb-5">
+        <h3 className="m-0 mb-3 text-gray-700 text-base font-semibold">
           📅 날짜 설정
         </h3>
-        <div style={{ display: "flex", gap: "16px" }}>
-          <div style={{ flex: 1 }}>
+        <div className="flex gap-4">
+          <div className="flex-1">
             <DatePicker
               value={localStartDate ? dayjs(localStartDate) : null}
               onChange={(date) =>
                 setLocalStartDate(date ? date.format("YYYY-MM-DD") : "")
               }
-              style={{ width: "100%" }}
+              className="w-full"
               placeholder="시작일 선택"
             />
           </div>
-          <div style={{ flex: 1 }}>
+          <div className="flex-1">
             <DatePicker
               value={localEndDate ? dayjs(localEndDate) : null}
               onChange={(date) =>
                 setLocalEndDate(date ? date.format("YYYY-MM-DD") : "")
               }
-              style={{ width: "100%" }}
+              className="w-full"
               placeholder="종료일 선택"
             />
           </div>
@@ -184,15 +170,8 @@ const DrawerContent = forwardRef(({ selectedRow, onSave }, ref) => {
       </div>
 
       {/* 이슈 상세 내용 */}
-      <div style={{ marginBottom: "20px" }}>
-        <h3
-          style={{
-            margin: "0 0 12px 0",
-            color: "#333",
-            fontSize: "16px",
-            fontWeight: "600",
-          }}
-        >
+      <div className="mb-5">
+        <h3 className="m-0 mb-3 text-gray-700 text-base font-semibold">
           📝 Issue 상세내용
         </h3>
         <ReactQuill
@@ -200,10 +179,7 @@ const DrawerContent = forwardRef(({ selectedRow, onSave }, ref) => {
           onChange={setLocalIssueContent}
           modules={quillModules}
           formats={quillFormats}
-          style={{
-            height: "200px",
-            marginBottom: "50px",
-          }}
+          className="h-50 mb-12"
           placeholder="이슈 상세 내용을 입력하세요..."
         />
       </div>

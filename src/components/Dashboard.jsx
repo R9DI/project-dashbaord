@@ -250,12 +250,12 @@ const Dashboard = () => {
     <>
       <Card
         title={
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <BarChartOutlined style={{ color: "#1890ff" }} />
+          <div className="flex items-center gap-2">
+            <BarChartOutlined className="text-blue-500" />
             <span>프로젝트 관리 대시보드</span>
           </div>
         }
-        style={{ marginBottom: 16 }}
+        className="mb-4"
         styles={{
           body: {
             padding: "16px",
@@ -263,53 +263,33 @@ const Dashboard = () => {
         }}
       >
         {/* 통계 정보 */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: "16px",
-            padding: "12px",
-            backgroundColor: "#f8f9fa",
-            borderRadius: "8px",
-            border: "1px solid #e8e8e8",
-          }}
-        >
-          <div style={{ textAlign: "center" }}>
-            <div
-              style={{ fontSize: "24px", fontWeight: "bold", color: "#1890ff" }}
-            >
+        <div className="flex justify-between mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-500">
               {stats.total}
             </div>
-            <div style={{ fontSize: "12px", color: "#666" }}>총 과제 수</div>
+            <div className="text-xs text-gray-500">총 과제 수</div>
           </div>
-          <div style={{ textAlign: "center" }}>
-            <div
-              style={{ fontSize: "24px", fontWeight: "bold", color: "#52c41a" }}
-            >
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-500">
               {stats.win}%
             </div>
-            <div style={{ fontSize: "12px", color: "#666" }}>승률</div>
+            <div className="text-xs text-gray-500">승률</div>
           </div>
-          <div style={{ textAlign: "center" }}>
-            <div
-              style={{ fontSize: "24px", fontWeight: "bold", color: "#faad14" }}
-            >
+          <div className="text-center">
+            <div className="text-2xl font-bold text-yellow-500">
               {stats.draw}%
             </div>
-            <div style={{ fontSize: "12px", color: "#666" }}>무승부</div>
+            <div className="text-xs text-gray-500">무승부</div>
           </div>
-          <div style={{ textAlign: "center" }}>
-            <div
-              style={{ fontSize: "24px", fontWeight: "bold", color: "#f5222d" }}
-            >
-              {stats.lose}%
-            </div>
-            <div style={{ fontSize: "12px", color: "#666" }}>패배률</div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-red-500">{stats.lose}%</div>
+            <div className="text-xs text-gray-500">패배률</div>
           </div>
         </div>
 
         {/* 액션 버튼 */}
-        <div style={{ marginBottom: "16px" }}>
+        <div className="mb-4">
           <Space>
             <Button type="primary" icon={<PlusOutlined />} onClick={addNewData}>
               새 데이터 생성
@@ -332,25 +312,14 @@ const Dashboard = () => {
             <Button icon={<ReloadOutlined />} onClick={refreshData}>
               데이터 새로고침
             </Button>
-            <Button
-              onClick={openColorSettingsModal}
-              style={{ marginLeft: "8px" }}
-            >
+            <Button onClick={openColorSettingsModal} className="ml-2">
               색상 설정
             </Button>
           </Space>
         </div>
 
         {/* Ag-Grid */}
-        <div
-          className="ag-theme-alpine"
-          style={{
-            height: "500px",
-            width: "100%",
-            border: "1px solid #e8e8e8",
-            borderRadius: "8px",
-          }}
-        >
+        <div className="ag-theme-alpine h-[500px] w-full border border-gray-200 rounded-lg">
           <AgGridReact
             modules={[ClientSideRowModelModule]}
             columnDefs={columnDefs}

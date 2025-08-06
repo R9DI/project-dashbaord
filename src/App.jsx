@@ -2,7 +2,6 @@ import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import IssueModal from "./components/IssueModal.jsx";
 import Dashboard from "./components/Dashboard.jsx";
-import "./App.css";
 
 // React Query 클라이언트 생성
 const queryClient = new QueryClient({
@@ -18,16 +17,20 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="App">
-        <header className="App-header">
-          <h1>Project Issue Management System</h1>
-          <p>Manage issues and track project progress</p>
-          <p>안녕</p>
+      <div className="text-center min-h-screen bg-gray-100">
+        <header className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white py-10 px-5 mb-5 shadow-lg">
+          <h1 className="m-0 mb-2.5 text-4xl font-semibold md:text-5xl">
+            Project Issue Management System
+          </h1>
+          <p className="m-0 text-lg opacity-90 md:text-xl">
+            Manage issues and track project progress
+          </p>
+          <p className="m-0 text-lg opacity-90 md:text-xl">안녕</p>
         </header>
 
-        <main style={{ padding: "20px" }}>
+        <main className="max-w-6xl mx-auto px-5 md:px-20">
           <Dashboard />
-          <div style={{ marginTop: "20px", textAlign: "center" }}>
+          <div className="mt-5 text-center">
             <IssueModal />
           </div>
         </main>

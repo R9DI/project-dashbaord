@@ -54,16 +54,9 @@ const ColorSettingsModal = ({
         cancelText="취소"
       >
         <Form form={form} initialValues={initialValues} layout="vertical">
-          <div
-            style={{
-              marginBottom: "16px",
-              padding: "12px",
-              backgroundColor: "#f0f8ff",
-              borderRadius: "8px",
-            }}
-          >
+          <div className="mb-4 p-3 bg-blue-50 rounded-lg">
             <Text strong>색상 기준:</Text>
-            <div style={{ marginTop: "8px" }}>
+            <div className="mt-2">
               <Tag color="green">녹색: 기준값 이상</Tag>
               <Tag color="gold">노란색: 낮은 기준값 ~ 높은 기준값</Tag>
               <Tag color="red">빨간색: 낮은 기준값 미만</Tag>
@@ -84,7 +77,7 @@ const ColorSettingsModal = ({
                   min={0}
                   max={100}
                   step={1}
-                  style={{ width: "100%" }}
+                  className="w-full"
                   addonAfter="%"
                 />
               </Form.Item>
@@ -102,7 +95,7 @@ const ColorSettingsModal = ({
                   min={0}
                   max={100}
                   step={1}
-                  style={{ width: "100%" }}
+                  className="w-full"
                   addonAfter="%"
                 />
               </Form.Item>
@@ -123,7 +116,7 @@ const ColorSettingsModal = ({
                   min={0}
                   max={100}
                   step={1}
-                  style={{ width: "100%" }}
+                  className="w-full"
                   addonAfter="%"
                 />
               </Form.Item>
@@ -141,7 +134,7 @@ const ColorSettingsModal = ({
                   min={0}
                   max={100}
                   step={1}
-                  style={{ width: "100%" }}
+                  className="w-full"
                   addonAfter="%"
                 />
               </Form.Item>
@@ -162,7 +155,7 @@ const ColorSettingsModal = ({
                   min={0}
                   max={100}
                   step={1}
-                  style={{ width: "100%" }}
+                  className="w-full"
                   addonAfter="%"
                 />
               </Form.Item>
@@ -180,7 +173,7 @@ const ColorSettingsModal = ({
                   min={0}
                   max={100}
                   step={1}
-                  style={{ width: "100%" }}
+                  className="w-full"
                   addonAfter="%"
                 />
               </Form.Item>
@@ -201,7 +194,7 @@ const ColorSettingsModal = ({
                   min={0}
                   max={100}
                   step={1}
-                  style={{ width: "100%" }}
+                  className="w-full"
                   addonAfter="%"
                 />
               </Form.Item>
@@ -219,7 +212,7 @@ const ColorSettingsModal = ({
                   min={0}
                   max={100}
                   step={1}
-                  style={{ width: "100%" }}
+                  className="w-full"
                   addonAfter="%"
                 />
               </Form.Item>
@@ -240,7 +233,7 @@ const ColorSettingsModal = ({
                   min={0}
                   max={100}
                   step={1}
-                  style={{ width: "100%" }}
+                  className="w-full"
                   addonAfter="%"
                 />
               </Form.Item>
@@ -258,7 +251,7 @@ const ColorSettingsModal = ({
                   min={0}
                   max={100}
                   step={1}
-                  style={{ width: "100%" }}
+                  className="w-full"
                   addonAfter="%"
                 />
               </Form.Item>
@@ -279,7 +272,7 @@ const ColorSettingsModal = ({
                   min={0}
                   max={100}
                   step={1}
-                  style={{ width: "100%" }}
+                  className="w-full"
                   addonAfter="%"
                 />
               </Form.Item>
@@ -297,7 +290,7 @@ const ColorSettingsModal = ({
                   min={0}
                   max={100}
                   step={1}
-                  style={{ width: "100%" }}
+                  className="w-full"
                   addonAfter="%"
                 />
               </Form.Item>
