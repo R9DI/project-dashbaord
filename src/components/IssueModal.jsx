@@ -13,6 +13,8 @@ import {
   DatePicker,
   Input,
   Select,
+  Tabs,
+  Tooltip,
 } from "antd";
 import GanttChart from "./GanttChart.jsx";
 import GanttLegend from "./GanttLegend.jsx";
@@ -23,12 +25,25 @@ import dayjs from "dayjs";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import { useIssues, useAddIssue, useUpdateIssue } from "../hooks/useIssues";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import MDEditor from "@uiw/react-md-editor";
+import TurndownService from "turndown";
+import {
+  PlusOutlined,
+  BoldOutlined,
+  ItalicOutlined,
+  LinkOutlined,
+  PictureOutlined,
+  FileTextOutlined,
+  CheckSquareOutlined,
+  UnorderedListOutlined,
+  OrderedListOutlined,
+  CodeOutlined,
+} from "@ant-design/icons";
 
 // Register the required feature modules with the Grid
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
-import { PlusOutlined } from "@ant-design/icons";
 
 const IssueModal = ({ isVisible, onClose, data }) => {
   // React Query hooks
@@ -36,26 +51,46 @@ const IssueModal = ({ isVisible, onClose, data }) => {
   const addIssueMutation = useAddIssue();
   const updateIssueMutation = useUpdateIssue();
 
-  // 리치 에디터 설정
-  const quillModules = {
-    toolbar: [
-      [{ header: [1, 2, false] }],
-      ["bold", "italic", "underline"],
-      [{ list: "ordered" }, { list: "bullet" }],
-      [{ indent: "-1" }, { indent: "+1" }],
-      ["clean"],
-    ],
-  };
+  // Turndown 서비스 초기화 (HTML to Markdown 변환)
+  const turndownService = useMemo(() => {
+    const service = new TurndownService({
+      headingStyle: "atx",
+      codeBlockStyle: "fenced",
+    });
 
-  const quillFormats = [
-    "header",
-    "bold",
-    "italic",
-    "underline",
-    "list",
-    "bullet",
-    "indent",
-  ];
+    // 코드 블록 보존
+    service.addRule("codeBlocks", {
+      filter: ["pre"],
+      replacement: function (content, node) {
+        const code = node.querySelector("code");
+        if (code) {
+          const language = code.className?.replace("language-", "") || "";
+          return `\n\`\`\`${language}\n${code.textContent}\n\`\`\`\n`;
+        }
+        return content;
+      },
+    });
+
+    return service;
+  }, []);
+
+  // 마크다운 에디터 설정
+  const markdownPlaceholder = `# 이슈 제목
+
+## 상세 내용
+여기에 이슈에 대한 상세한 내용을 작성하세요.
+
+### 체크리스트
+- [ ] 첫 번째 작업
+- [ ] 두 번째 작업
+- [ ] 세 번째 작업
+
+### 코드 예시
+\`\`\`javascript
+console.log("Hello World");
+\`\`\`
+
+**굵은 텍스트**와 *기울임 텍스트*도 사용할 수 있습니다.`;
 
   const [isModalVisible, setIsModalVisible] = useState(isVisible);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
@@ -228,7 +263,34 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       summary: "",
       status: "pending",
       img: "", // 이미지 없음으로 시작
-      detail: "새 이슈에 대한 상세 내용을 입력하세요.",
+      detail: `# 새 이슈
+
+## 📋 요약
+여기에 이슈에 대한 간단한 요약을 작성하세요.
+
+## 🔍 상세 내용
+여기에 이슈에 대한 상세한 내용을 작성하세요.
+
+## ✅ 체크리스트
+- [ ] 첫 번째 작업
+- [ ] 두 번째 작업
+- [ ] 세 번째 작업
+
+## 📅 일정
+- **시작일**: ${today}
+- **예상 완료일**: ${nextWeek}
+- **실제 완료일**: 
+
+## 🏷️ 태그
+- **우선순위**: 
+- **담당자**: 
+- **카테고리**: 
+
+## 📎 첨부파일
+업로드된 파일과 이미지가 여기에 표시됩니다.
+
+## 📝 참고사항
+추가적인 메모나 참고사항을 여기에 작성하세요.`,
       start: today,
       end: nextWeek,
       file: "",
@@ -373,18 +435,52 @@ const IssueModal = ({ isVisible, onClose, data }) => {
           );
         }
 
-        // HTML 태그를 그대로 렌더링
-        const createMarkup = (htmlContent) => {
-          return { __html: htmlContent };
-        };
-
-        // 모든 경우에 스크롤로 표시
+        // 마크다운을 렌더링
         return (
           <div className="p-1 px-2 text-sm leading-relaxed text-gray-700 text-left flex items-center justify-start h-full w-full overflow-auto">
-            <div
-              dangerouslySetInnerHTML={createMarkup(detail)}
-              className="rich-text-preview w-full max-h-full break-words overflow-y-auto leading-relaxed"
-            />
+            <div className="markdown-preview w-full max-h-full break-words overflow-y-auto leading-relaxed text-sm prose prose-sm max-w-none">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  // 헤더 크기 제한
+                  h1: ({ node, ...props }) => (
+                    <h1 className="text-lg font-bold mb-1" {...props} />
+                  ),
+                  h2: ({ node, ...props }) => (
+                    <h2 className="text-base font-bold mb-1" {...props} />
+                  ),
+                  h3: ({ node, ...props }) => (
+                    <h3 className="text-sm font-bold mb-1" {...props} />
+                  ),
+                  // 리스트 스타일링
+                  ul: ({ node, ...props }) => (
+                    <ul className="list-disc list-inside mb-1" {...props} />
+                  ),
+                  ol: ({ node, ...props }) => (
+                    <ol className="list-decimal list-inside mb-1" {...props} />
+                  ),
+                  // 코드 블록 스타일링
+                  code: ({ node, inline, ...props }) =>
+                    inline ? (
+                      <code
+                        className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono"
+                        {...props}
+                      />
+                    ) : (
+                      <code
+                        className="block bg-gray-100 p-2 rounded text-xs font-mono my-1"
+                        {...props}
+                      />
+                    ),
+                  // 링크 스타일링
+                  a: ({ node, ...props }) => (
+                    <a className="text-blue-500 hover:underline" {...props} />
+                  ),
+                }}
+              >
+                {detail}
+              </ReactMarkdown>
+            </div>
           </div>
         );
       },
@@ -570,46 +666,37 @@ const IssueModal = ({ isVisible, onClose, data }) => {
 
                   if (!detail && !summary) return 80; // 기본 높이
 
-                  // Rich text의 HTML 태그를 분석하여 줄 수 계산
-                  const calculateRichTextLines = (htmlContent) => {
-                    if (!htmlContent) return 0;
+                  // 마크다운 텍스트의 줄 수 계산
+                  const calculateMarkdownLines = (markdownContent) => {
+                    if (!markdownContent) return 0;
 
-                    // 줄바꿈을 만드는 태그들을 찾아서 개수 세기
-                    const lineBreakTags = [
-                      "<p>",
-                      "<li>",
-                      "<br>",
-                      "<div>",
-                      "<h1>",
-                      "<h2>",
-                      "<h3>",
-                      "<h4>",
-                      "<h5>",
-                      "<h6>",
-                    ];
-                    let lineCount = 0;
+                    // 줄바꿈 개수 세기
+                    const lineBreaks = (markdownContent.match(/\n/g) || [])
+                      .length;
 
-                    // 각 태그의 개수를 세기
-                    lineBreakTags.forEach((tag) => {
-                      const regex = new RegExp(tag, "gi");
-                      const matches = htmlContent.match(regex);
-                      if (matches) {
-                        lineCount += matches.length;
-                      }
-                    });
+                    // 마크다운 헤더, 리스트, 코드 블록 등을 고려한 추가 줄 수
+                    const headers = (markdownContent.match(/^#{1,6}\s/gm) || [])
+                      .length;
+                    const listItems = (
+                      markdownContent.match(/^[\s]*[-*+]\s/gm) || []
+                    ).length;
+                    const codeBlocks = (
+                      markdownContent.match(/```[\s\S]*?```/g) || []
+                    ).length;
 
-                    // <br> 태그는 추가로 세기 (이미 위에서 세었지만 명확히 하기 위해)
-                    const brMatches = htmlContent.match(/<br\s*\/?>/gi);
-                    if (brMatches) {
-                      lineCount += brMatches.length;
-                    }
+                    // 각 코드 블록은 최소 3줄로 계산
+                    const codeBlockLines = codeBlocks * 3;
+
+                    // 총 줄 수 계산 (줄바꿈 + 헤더 + 리스트 아이템 + 코드 블록)
+                    const totalLines =
+                      lineBreaks + headers + listItems + codeBlockLines;
 
                     // 최소 1줄 보장
-                    return Math.max(lineCount, 1);
+                    return Math.max(totalLines, 1);
                   };
 
                   // 상세 내용의 줄 수만 계산
-                  const totalLines = calculateRichTextLines(detail);
+                  const totalLines = calculateMarkdownLines(detail);
 
                   // 10줄 이상일 때는 10줄로 고정
                   const displayLines = totalLines > 10 ? 10 : totalLines;
@@ -773,14 +860,155 @@ const IssueModal = ({ isVisible, onClose, data }) => {
               <h3 className="m-0 mb-3 text-gray-700 text-base font-semibold">
                 📝 Issue 상세내용
               </h3>
-              <ReactQuill
-                value={localIssueContent}
-                onChange={setLocalIssueContent}
-                modules={quillModules}
-                formats={quillFormats}
-                className="h-50 mb-12"
-                placeholder="이슈 상세 내용을 입력하세요..."
-              />
+
+              {/* 에디터 모드 선택 */}
+              <div className="mb-3">
+                <Tabs
+                  defaultActiveKey="wysiwyg"
+                  items={[
+                    {
+                      key: "wysiwyg",
+                      label: "WYSIWYG 편집",
+                      children: (
+                        <div className="space-y-3">
+                          <div className="flex gap-2 mb-2">
+                            <Tooltip title="HTML 붙여넣기 (Word, Quill 등)">
+                              <Button
+                                size="small"
+                                onClick={() => {
+                                  navigator.clipboard
+                                    .readText()
+                                    .then((text) => {
+                                      if (
+                                        text.includes("<") &&
+                                        text.includes(">")
+                                      ) {
+                                        try {
+                                          const markdown =
+                                            turndownService.turndown(text);
+                                          setLocalIssueContent(markdown);
+                                          message.success(
+                                            "HTML이 마크다운으로 변환되었습니다!"
+                                          );
+                                        } catch (error) {
+                                          message.error(
+                                            "HTML 변환에 실패했습니다."
+                                          );
+                                        }
+                                      } else {
+                                        message.info(
+                                          "클립보드에 HTML이 없습니다."
+                                        );
+                                      }
+                                    });
+                                }}
+                              >
+                                📋 HTML 변환
+                              </Button>
+                            </Tooltip>
+                            <Tooltip title="마크다운 가이드">
+                              <Button
+                                size="small"
+                                onClick={() => {
+                                  const guide = `# 마크다운 가이드
+
+## 기본 문법
+**굵은 텍스트**와 *기울임 텍스트*
+
+### 리스트
+- [ ] 체크리스트
+- [x] 완료된 항목
+
+### 코드
+\`\`\`javascript
+console.log("Hello World");
+\`\`\`
+
+### 링크
+[링크 텍스트](https://example.com)
+
+### 이미지
+![이미지 설명](이미지URL)`;
+                                  setLocalIssueContent(guide);
+                                }}
+                              >
+                                📖 가이드
+                              </Button>
+                            </Tooltip>
+                          </div>
+
+                          <MDEditor
+                            value={localIssueContent}
+                            onChange={setLocalIssueContent}
+                            preview="edit"
+                            height={300}
+                            className="font-mono text-sm"
+                            textareaProps={{
+                              placeholder: markdownPlaceholder,
+                              onPaste: (e) => {
+                                // HTML 붙여넣기 자동 감지 및 변환
+                                const clipboardData = e.clipboardData;
+                                if (clipboardData) {
+                                  const html =
+                                    clipboardData.getData("text/html");
+                                  if (html && html.includes("<")) {
+                                    e.preventDefault();
+                                    try {
+                                      const markdown =
+                                        turndownService.turndown(html);
+                                      setLocalIssueContent(
+                                        (prev) => prev + markdown
+                                      );
+                                      message.success(
+                                        "HTML이 마크다운으로 자동 변환되었습니다!"
+                                      );
+                                    } catch (error) {
+                                      // 변환 실패 시 일반 텍스트로 붙여넣기
+                                      const text =
+                                        clipboardData.getData("text/plain");
+                                      setLocalIssueContent(
+                                        (prev) => prev + text
+                                      );
+                                    }
+                                  }
+                                }
+                              },
+                            }}
+                          />
+                        </div>
+                      ),
+                    },
+                    {
+                      key: "markdown",
+                      label: "마크다운 직접 편집",
+                      children: (
+                        <Input.TextArea
+                          value={localIssueContent}
+                          onChange={(e) => setLocalIssueContent(e.target.value)}
+                          placeholder={markdownPlaceholder}
+                          rows={15}
+                          className="font-mono text-sm"
+                          style={{ resize: "vertical" }}
+                        />
+                      ),
+                    },
+                    {
+                      key: "preview",
+                      label: "미리보기",
+                      children: (
+                        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 min-h-[300px]">
+                          <div className="prose prose-sm max-w-none text-sm">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {localIssueContent ||
+                                "*내용을 입력하면 여기에 미리보기가 표시됩니다.*"}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
+                      ),
+                    },
+                  ]}
+                />
+              </div>
             </div>
 
             {/* 이미지 업로드 영역 */}
@@ -789,6 +1017,30 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 🖼️ 첨부 이미지
               </h3>
               <div className="border border-gray-300 rounded-lg p-4 text-center bg-white transition-all duration-300 min-h-64">
+                <div className="flex gap-2 mb-3 justify-center">
+                  <Tooltip title="현재 커서 위치에 이미지 마크다운 삽입">
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        if (localImageUrls.length > 0) {
+                          const imageMarkdown = localImageUrls
+                            .map((url) => `![이미지](${url})`)
+                            .join("\n");
+                          setLocalIssueContent(
+                            (prev) => prev + "\n\n" + imageMarkdown
+                          );
+                          message.success(
+                            "이미지 마크다운이 에디터에 삽입되었습니다!"
+                          );
+                        } else {
+                          message.info("삽입할 이미지가 없습니다.");
+                        }
+                      }}
+                    >
+                      📝 에디터에 삽입
+                    </Button>
+                  </Tooltip>
+                </div>
                 <Upload.Dragger
                   name="image"
                   accept="image/*"
@@ -805,6 +1057,23 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                     }
                     const uploadedImageUrl = URL.createObjectURL(file);
                     setLocalImageUrls((prev) => [...prev, uploadedImageUrl]);
+
+                    // 자동으로 마크다운 삽입 옵션
+                    Modal.confirm({
+                      title: "이미지 마크다운 삽입",
+                      content:
+                        "에디터에 이미지 마크다운을 자동으로 삽입하시겠습니까?",
+                      onOk: () => {
+                        const imageMarkdown = `![${file.name}](${uploadedImageUrl})`;
+                        setLocalIssueContent(
+                          (prev) => prev + "\n\n" + imageMarkdown
+                        );
+                        message.success(
+                          "이미지 마크다운이 자동으로 삽입되었습니다!"
+                        );
+                      },
+                    });
+
                     message.success(
                       `${file.name} 이미지가 성공적으로 추가되었습니다.`
                     );
@@ -873,6 +1142,32 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                 📄 첨부 파일
               </h3>
               <div className="border border-gray-300 rounded-lg p-4 bg-white min-h-44">
+                <div className="flex gap-2 mb-3 justify-center">
+                  <Tooltip title="현재 커서 위치에 파일 링크 마크다운 삽입">
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        if (localFileUrls.length > 0) {
+                          const fileMarkdown = localFileUrls
+                            .map(
+                              (file) => `[${file.name || "파일"}](${file.url})`
+                            )
+                            .join("\n");
+                          setLocalIssueContent(
+                            (prev) => prev + "\n\n" + fileMarkdown
+                          );
+                          message.success(
+                            "파일 링크 마크다운이 에디터에 삽입되었습니다!"
+                          );
+                        } else {
+                          message.info("삽입할 파일이 없습니다.");
+                        }
+                      }}
+                    >
+                      📝 에디터에 삽입
+                    </Button>
+                  </Tooltip>
+                </div>
                 <Upload.Dragger
                   name="file"
                   accept="*/*"
@@ -891,6 +1186,23 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                       type: file.type,
                     };
                     setLocalFileUrls((prev) => [...prev, fileWithName]);
+
+                    // 자동으로 마크다운 삽입 옵션
+                    Modal.confirm({
+                      title: "파일 링크 마크다운 삽입",
+                      content:
+                        "에디터에 파일 링크 마크다운을 자동으로 삽입하시겠습니까?",
+                      onOk: () => {
+                        const fileMarkdown = `[${file.name}](${uploadedFileUrl})`;
+                        setLocalIssueContent(
+                          (prev) => prev + "\n\n" + fileMarkdown
+                        );
+                        message.success(
+                          "파일 링크 마크다운이 자동으로 삽입되었습니다!"
+                        );
+                      },
+                    });
+
                     message.success(`${file.name} 파일이 업로드되었습니다.`);
                     return false;
                   }}
