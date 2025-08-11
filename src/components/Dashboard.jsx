@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry } from "ag-grid-community";
 import { ClientSideRowModelModule } from "ag-grid-community";
@@ -42,10 +42,28 @@ const Dashboard = () => {
     setSelectedRowData,
   } = useModalStore();
 
+  // 모달이 닫힐 때 selectedRowData 정리
+  useEffect(() => {
+    console.log(
+      "Dashboard - useEffect - isIssueModalVisible:",
+      isIssueModalVisible
+    );
+    console.log("Dashboard - useEffect - selectedRowData:", selectedRowData);
+    if (!isIssueModalVisible && selectedRowData) {
+      console.log(
+        "Dashboard - useEffect - 모달이 닫혔으므로 selectedRowData 정리"
+      );
+      setSelectedRowData(null);
+    }
+  }, [isIssueModalVisible, selectedRowData, setSelectedRowData]);
+
   // 빈 행 생성
   const generateEmptyRow = () => {
+    // 기존 프로젝트 ID와 중복되지 않는 ID 생성
+    const newId = Math.max(...(rowData.map((p) => p.id) || [0])) + 1;
     return {
-      id: Date.now(), // 고유 ID 생성
+      id: newId,
+      projectId: newId, // projectId도 함께 생성 (기존 ID와 중복되지 않음)
       projectName: "",
       inlinePassRate: 0,
       elecPassRate: 0,
@@ -106,8 +124,84 @@ const Dashboard = () => {
                 data-project-id={projectId}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedRowData(params.data);
-                  openIssueModal();
+                  // 프로젝트 데이터를 제대로 전달
+                  const projectData = {
+                    ...params.data,
+                    projectId: params.data.projectId || params.data.id, // projectId 우선, 없으면 id 사용
+                    projectName: params.data.projectName, // 프로젝트 이름도 명시적으로 설정
+                  };
+                  console.log(
+                    "Dashboard - 이슈 버튼 클릭 - 원본 params.data:",
+                    params.data
+                  );
+                  console.log(
+                    "Dashboard - 이슈 버튼 클릭 - 가공된 projectData:",
+                    projectData
+                  );
+                  console.log(
+                    "Dashboard - 이슈 버튼 클릭 - projectId:",
+                    projectData.projectId
+                  );
+                  console.log(
+                    "Dashboard - 이슈 버튼 클릭 - projectName:",
+                    projectData.projectName
+                  );
+                  console.log(
+                    "Dashboard - 이슈 버튼 클릭 - projectData.id:",
+                    projectData.id
+                  );
+
+                  // 데이터 설정 후 모달 열기
+                  console.log(
+                    "Dashboard - openIssueModal 호출 전 projectData:",
+                    projectData
+                  );
+
+                  // projectId가 유효한지 확인
+                  if (!projectData.projectId) {
+                    console.error(
+                      "Dashboard - 유효하지 않은 projectData:",
+                      projectData
+                    );
+                    console.error(
+                      "Dashboard - projectData.projectId:",
+                      projectData.projectId
+                    );
+                    console.error(
+                      "Dashboard - projectData.id:",
+                      projectData.id
+                    );
+                    message.error("프로젝트 정보가 유효하지 않습니다.");
+                    return;
+                  }
+
+                  // 먼저 selectedRowData를 설정하고 모달을 열기
+                  console.log("Dashboard - setSelectedRowData 호출 전");
+                  setSelectedRowData(projectData);
+                  console.log("Dashboard - setSelectedRowData 호출 후");
+                  console.log("Dashboard - openIssueModal 호출 전");
+                  openIssueModal(projectData);
+                  console.log("Dashboard - openIssueModal 호출 후");
+                  console.log(
+                    "Dashboard - openIssueModal 호출 후 selectedRowData:",
+                    projectData
+                  );
+                  console.log(
+                    "Dashboard - openIssueModal 호출 후 store의 selectedRowData:",
+                    selectedRowData
+                  );
+
+                  // 잠시 후 store 상태 확인
+                  setTimeout(() => {
+                    console.log(
+                      "Dashboard - setTimeout 후 store의 selectedRowData:",
+                      selectedRowData
+                    );
+                    console.log(
+                      "Dashboard - setTimeout 후 store의 isIssueModalVisible:",
+                      isIssueModalVisible
+                    );
+                  }, 100);
                 }}
               >
                 🔧
@@ -278,11 +372,17 @@ const Dashboard = () => {
       </Card>
 
       {/* Issue Modal */}
-      <IssueModal
-        isVisible={isIssueModalVisible}
-        onClose={closeIssueModal}
-        data={selectedRowData}
-      />
+      {isIssueModalVisible && selectedRowData && (
+        <IssueModal
+          isVisible={isIssueModalVisible}
+          onClose={closeIssueModal}
+          data={selectedRowData}
+        />
+      )}
+
+      {/* 디버깅용 로그 */}
+      {console.log("Dashboard - selectedRowData:", selectedRowData)}
+      {console.log("Dashboard - isIssueModalVisible:", isIssueModalVisible)}
 
       {/* Color Settings Modal */}
       <ColorSettingsModal

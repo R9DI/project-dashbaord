@@ -2,10 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Modal,
   Button,
-  Tag,
   Drawer,
-  Space,
-  Typography,
   message,
   Collapse,
   Image,
@@ -25,31 +22,73 @@ import dayjs from "dayjs";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import "@uiw/react-md-editor/markdown-editor.css";
-import { useIssues, useAddIssue, useUpdateIssue } from "../hooks/useIssues";
+import {
+  useIssues,
+  useIssuesByProject,
+  useAddIssue,
+  useUpdateIssue,
+} from "../hooks/useIssues";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import MDEditor from "@uiw/react-md-editor";
 import TurndownService from "turndown";
-import {
-  PlusOutlined,
-  BoldOutlined,
-  ItalicOutlined,
-  LinkOutlined,
-  PictureOutlined,
-  FileTextOutlined,
-  CheckSquareOutlined,
-  UnorderedListOutlined,
-  OrderedListOutlined,
-  CodeOutlined,
-} from "@ant-design/icons";
 
 // Register the required feature modules with the Grid
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
 const IssueModal = ({ isVisible, onClose, data }) => {
+  // 데이터 유효성 검사
+  if (!data || !data.projectId) {
+    console.warn("IssueModal - 유효하지 않은 데이터:", data);
+    return null;
+  }
+
   // React Query hooks
-  const { data: issues = [], isLoading, refetch } = useIssues();
+  // 프로젝트별 이슈 조회
+  const projectId = useMemo(() => {
+    if (!data || !data.projectId) return null;
+    return data.projectId;
+  }, [data]);
+
+  // 디버깅을 위한 로그 추가
+  useEffect(() => {
+    console.log("IssueModal - 받은 데이터:", data);
+    console.log("IssueModal - 추출된 projectId:", projectId);
+    console.log("IssueModal - data 타입:", typeof data);
+    console.log("IssueModal - data 내용:", JSON.stringify(data, null, 2));
+
+    // projectId가 유효한지 확인
+    if (projectId) {
+      console.log("IssueModal - 유효한 projectId 확인됨:", projectId);
+    } else {
+      console.warn("IssueModal - projectId가 유효하지 않음:", projectId);
+    }
+  }, [data, projectId]);
+
+  // 프로젝트별 이슈 조회
+  const {
+    data: projectIssues = [],
+    isLoading: projectLoading,
+    refetch: refetchProject,
+    error: projectError,
+  } = useIssuesByProject(projectId);
+
+  // 실제 사용할 이슈 데이터와 로딩 상태
+  const issues = projectIssues;
+  const isLoading = projectLoading;
+  const refetch = refetchProject;
+
+  // 프로젝트별 이슈 조회 로그
+  useEffect(() => {
+    console.log(`프로젝트 ID ${projectId}에 대한 이슈 조회:`, issues);
+    console.log(`로딩 상태:`, isLoading);
+    console.log(`이슈 개수:`, issues.length);
+    if (projectError) {
+      console.error(`프로젝트 ID ${projectId} 조회 에러:`, projectError);
+    }
+  }, [projectId, issues, isLoading, projectError]);
+
   const addIssueMutation = useAddIssue();
   const updateIssueMutation = useUpdateIssue();
 
@@ -177,6 +216,9 @@ console.log("Hello World");
           onSuccess: () => {
             message.success("변경사항이 저장되었습니다!");
             setIsDrawerVisible(false);
+
+            // 목록 새로고침
+            refetch();
           },
           onError: () => {
             message.error("저장에 실패했습니다!");
@@ -251,12 +293,17 @@ console.log("Hello World");
 
   const handleOk = () => {
     // 데이터 저장 로직 (실제로는 API 호출 등)
-    console.log("저장된 데이터:", rowData);
+    console.log("저장된 데이터:", sortedIssues);
     setIsModalVisible(false);
     if (onClose) onClose();
   };
 
   const addNewIssue = () => {
+    // projectId는 이미 유효성 검사를 통과했으므로 추가 체크 불필요
+
+    console.log("addNewIssue - 새 이슈 추가 시작 - projectId:", projectId);
+    console.log("addNewIssue - 프로젝트 데이터:", data);
+
     const today = dayjs().format("YYYY-MM-DD");
     const nextWeek = dayjs().add(7, "day").format("YYYY-MM-DD"); // 오늘부터 7일 후
 
@@ -265,6 +312,7 @@ console.log("Hello World");
       summary: "",
       status: "pending",
       img: "", // 이미지 없음으로 시작
+      projectId: projectId, // 프로젝트 ID
       detail: `# 새 이슈
 
 ## 📋 요약
@@ -288,7 +336,7 @@ console.log("Hello World");
 - **담당자**: 
 - **카테고리**: 
 
-## �� 첨부파일
+## 📎 첨부파일
 업로드된 파일과 이미지가 여기에 표시됩니다.
 
 ## 📝 참고사항
@@ -299,11 +347,24 @@ console.log("Hello World");
       progress: "계획 단계",
     };
 
+    console.log("addNewIssue - 생성할 새 이슈:", newIssue);
+
     addIssueMutation.mutate(newIssue, {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        console.log("새 이슈 추가 성공:", data);
         message.success("새 이슈가 추가되었습니다!");
+
+        // 목록 새로고침
+        refetch();
+
+        // 새로 추가된 이슈를 선택하고 드로워 열기
+        setTimeout(() => {
+          setSelectedRow(data);
+          setIsDrawerVisible(true);
+        }, 100);
       },
-      onError: () => {
+      onError: (error) => {
+        console.error("이슈 추가 실패:", error);
         message.error("이슈 추가에 실패했습니다!");
       },
     });
@@ -584,7 +645,11 @@ console.log("Hello World");
         title={
           <div className="text-lg font-semibold text-blue-500 flex items-center gap-2">
             📊{" "}
-            {data ? `${data.projectName} - 이슈 관리` : getCurrentMonthYear()}
+            {data && data.projectName
+              ? `${data.projectName} - 이슈 관리`
+              : projectId
+              ? `프로젝트 ${projectId} - 이슈 관리`
+              : getCurrentMonthYear()}
           </div>
         }
         open={isModalVisible}
@@ -644,7 +709,10 @@ console.log("Hello World");
             header={
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-2 font-semibold">
-                  📋 전체 이슈 목록 ({sortedIssues.length}개)
+                  📋 전체 이슈 목록 ({issues.length}개)
+                  {isLoading && (
+                    <span className="text-blue-500 text-sm">로딩 중...</span>
+                  )}
                 </div>
                 <Button
                   type="primary"
@@ -655,127 +723,199 @@ console.log("Hello World");
                   icon={<span>➕</span>}
                   size="small"
                   className="flex items-center gap-1 font-semibold rounded-md shadow-md"
+                  loading={addIssueMutation.isPending}
+                  disabled={!projectId}
+                  title={
+                    !projectId
+                      ? "프로젝트 ID가 없어 이슈를 추가할 수 없습니다."
+                      : "새 이슈 추가"
+                  }
                 >
                   새 이슈 추가
                 </Button>
               </div>
             }
           >
-            <div className="ag-theme-alpine w-full min-h-[500px] h-[calc(90vh-250px)]">
-              <AgGridReact
-                ref={gridRef}
-                modules={[ClientSideRowModelModule]}
-                columnDefs={columnDefs}
-                rowData={sortedIssues}
-                getRowHeight={(params) => {
-                  const detail = params.data?.detail || "";
-                  const summary = params.data?.summary || "";
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="text-2xl mb-2">⏳</div>
+                  <div className="text-gray-600">
+                    이슈 목록을 불러오는 중...
+                  </div>
+                </div>
+              </div>
+            ) : !projectId ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="text-4xl mb-4">🚫</div>
+                  <div className="text-lg font-semibold text-gray-700 mb-2">
+                    프로젝트를 선택해주세요
+                  </div>
+                  <div className="text-gray-500 mb-4">
+                    이슈를 보려면 먼저 프로젝트를 선택해야 합니다.
+                  </div>
+                  <div className="text-sm text-gray-400 mb-2">
+                    전달된 데이터: {JSON.stringify(data, null, 2)}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    projectId: {projectId || "N/A"}, data.id:{" "}
+                    {data?.id || "N/A"}
+                  </div>
+                  <Button type="primary" onClick={onClose} className="mt-4">
+                    모달 닫기
+                  </Button>
+                </div>
+              </div>
+            ) : projectId && issues.length === 0 ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="text-4xl mb-4">📝</div>
+                  <div className="text-lg font-semibold text-gray-700 mb-2">
+                    {data?.projectName
+                      ? `${data.projectName} 프로젝트에는`
+                      : projectId
+                      ? `프로젝트 ${projectId}에는`
+                      : "이 프로젝트에는"}{" "}
+                    아직 이슈가 없습니다.
+                  </div>
+                  <div className="text-gray-500 mb-4">
+                    새 이슈를 추가하여 시작해보세요!
+                  </div>
+                  <div className="text-sm text-gray-400 mb-4">
+                    프로젝트 ID: {projectId || "N/A"}
+                    {data?.projectName && (
+                      <span className="ml-2">({data.projectName})</span>
+                    )}
+                  </div>
+                  <Button
+                    type="primary"
+                    onClick={addNewIssue}
+                    icon={<span>➕</span>}
+                    size="large"
+                  >
+                    첫 번째 이슈 추가
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="ag-theme-alpine w-full min-h-[500px] h-[calc(90vh-250px)]">
+                <AgGridReact
+                  ref={gridRef}
+                  modules={[ClientSideRowModelModule]}
+                  columnDefs={columnDefs}
+                  rowData={sortedIssues}
+                  getRowHeight={(params) => {
+                    const detail = params.data?.detail || "";
+                    const summary = params.data?.summary || "";
 
-                  if (!detail && !summary) return 80; // 기본 높이
+                    if (!detail && !summary) return 80; // 기본 높이
 
-                  // 마크다운 텍스트의 줄 수 계산
-                  const calculateMarkdownLines = (markdownContent) => {
-                    if (!markdownContent) return 0;
+                    // 마크다운 텍스트의 줄 수 계산
+                    const calculateMarkdownLines = (markdownContent) => {
+                      if (!markdownContent) return 0;
 
-                    // 줄바꿈 개수 세기
-                    const lineBreaks = (markdownContent.match(/\n/g) || [])
-                      .length;
+                      // 줄바꿈 개수 세기
+                      const lineBreaks = (markdownContent.match(/\n/g) || [])
+                        .length;
 
-                    // 마크다운 헤더, 리스트, 코드 블록 등을 고려한 추가 줄 수
-                    const headers = (markdownContent.match(/^#{1,6}\s/gm) || [])
-                      .length;
-                    const listItems = (
-                      markdownContent.match(/^[\s]*[-*+]\s/gm) || []
-                    ).length;
-                    const codeBlocks = (
-                      markdownContent.match(/```[\s\S]*?```/g) || []
-                    ).length;
+                      // 마크다운 헤더, 리스트, 코드 블록 등을 고려한 추가 줄 수
+                      const headers = (
+                        markdownContent.match(/^#{1,6}\s/gm) || []
+                      ).length;
+                      const listItems = (
+                        markdownContent.match(/^[\s]*[-*+]\s/gm) || []
+                      ).length;
+                      const codeBlocks = (
+                        markdownContent.match(/```[\s\S]*?```/g) || []
+                      ).length;
 
-                    // 각 코드 블록은 최소 3줄로 계산
-                    const codeBlockLines = codeBlocks * 3;
+                      // 각 코드 블록은 최소 3줄로 계산
+                      const codeBlockLines = codeBlocks * 3;
 
-                    // 총 줄 수 계산 (줄바꿈 + 헤더 + 리스트 아이템 + 코드 블록)
-                    const totalLines =
-                      lineBreaks + headers + listItems + codeBlockLines;
+                      // 총 줄 수 계산 (줄바꿈 + 헤더 + 리스트 아이템 + 코드 블록)
+                      const totalLines =
+                        lineBreaks + headers + listItems + codeBlockLines;
 
-                    // 최소 1줄 보장
-                    return Math.max(totalLines, 1);
-                  };
+                      // 최소 1줄 보장
+                      return Math.max(totalLines, 1);
+                    };
 
-                  // 상세 내용의 줄 수만 계산
-                  const totalLines = calculateMarkdownLines(detail);
+                    // 상세 내용의 줄 수만 계산
+                    const totalLines = calculateMarkdownLines(detail);
 
-                  // 10줄 이상일 때는 10줄로 고정
-                  const displayLines = totalLines > 10 ? 10 : totalLines;
+                    // 10줄 이상일 때는 10줄로 고정
+                    const displayLines = totalLines > 10 ? 10 : totalLines;
 
-                  // 25px * 줄수 + 5px 패딩
-                  const lineHeight = 25; // 한 줄 높이
-                  const padding = 5; // 패딩
-                  const finalHeight = lineHeight * displayLines + padding;
+                    // 25px * 줄수 + 5px 패딩
+                    const lineHeight = 25; // 한 줄 높이
+                    const padding = 5; // 패딩
+                    const finalHeight = lineHeight * displayLines + padding;
 
-                  // 디버깅을 위한 콘솔 출력
-                  console.log(`Row ${params.data?.id}:`, {
-                    detail: detail.substring(0, 100) + "...",
-                    totalLines,
-                    displayLines,
-                    finalHeight,
-                    detailLength: detail.length,
-                    isTruncated: totalLines > 10,
-                  });
+                    // 디버깅을 위한 콘솔 출력
+                    console.log(`Row ${params.data?.id}:`, {
+                      detail: detail.substring(0, 100) + "...",
+                      totalLines,
+                      displayLines,
+                      finalHeight,
+                      detailLength: detail.length,
+                      isTruncated: totalLines > 10,
+                    });
 
-                  return Math.max(finalHeight, 80); // 최소 높이 보장
-                }}
-                getRowStyle={(params) => {
-                  // 이번 달에 진행 중인 항목은 하얀색 배경
-                  if (isCurrentMonthActive(params.data)) {
-                    return { backgroundColor: "#ffffff" };
-                  }
-                  // 완료된 과거 항목은 회색 배경
-                  return { backgroundColor: "#f5f5f5" };
-                }}
-                defaultColDef={{
-                  resizable: true,
-                  sortable: true,
-                  filter: true,
-                  editable: false,
-                  cellStyle: {
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-start",
-                    padding: "4px",
-                  },
-                }}
-                pagination={true}
-                paginationPageSize={10}
-                suppressRowClickSelection={false}
-                rowSelection="single"
-                animateRows={true}
-                suppressRowHeightResize={false}
-                onRowDoubleClicked={onRowClicked}
-                onRowDataUpdated={() => {
-                  // 데이터 업데이트 후 행 높이 재계산
-                  setTimeout(() => {
-                    if (gridRef.current && gridRef.current.api) {
-                      gridRef.current.api.resetRowHeights();
+                    return Math.max(finalHeight, 80); // 최소 높이 보장
+                  }}
+                  getRowStyle={(params) => {
+                    // 이번 달에 진행 중인 항목은 하얀색 배경
+                    if (isCurrentMonthActive(params.data)) {
+                      return { backgroundColor: "#ffffff" };
                     }
-                  }, 100);
-                }}
-                onGridReady={() => {
-                  // 그리드가 준비되면 행 높이 재계산
-                  setTimeout(() => {
-                    if (gridRef.current && gridRef.current.api) {
-                      gridRef.current.api.resetRowHeights();
-                    }
-                  }, 100);
-                }}
-                // 기본 정렬 설정
-                defaultSortModel={[
-                  { colId: "end", sort: "desc" }, // 종료일 기준 내림차순 (늦을수록 위로, 없으면 최상단)
-                  { colId: "start", sort: "desc" }, // 시작일 기준 내림차순 (늦을수록 위로)
-                  { colId: "category", sort: "asc" }, // 카테고리 기준 오름차순
-                ]}
-              />
-            </div>
+                    // 완료된 과거 항목은 회색 배경
+                    return { backgroundColor: "#f5f5f5" };
+                  }}
+                  defaultColDef={{
+                    resizable: true,
+                    sortable: true,
+                    filter: true,
+                    editable: false,
+                    cellStyle: {
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "flex-start",
+                      padding: "4px",
+                    },
+                  }}
+                  pagination={true}
+                  paginationPageSize={10}
+                  suppressRowClickSelection={false}
+                  rowSelection="single"
+                  animateRows={true}
+                  suppressRowHeightResize={false}
+                  onRowDoubleClicked={onRowClicked}
+                  onRowDataUpdated={() => {
+                    // 데이터 업데이트 후 행 높이 재계산
+                    setTimeout(() => {
+                      if (gridRef.current && gridRef.current.api) {
+                        gridRef.current.api.resetRowHeights();
+                      }
+                    }, 100);
+                  }}
+                  onGridReady={() => {
+                    // 그리드가 준비되면 행 높이 재계산
+                    setTimeout(() => {
+                      if (gridRef.current && gridRef.current.api) {
+                        gridRef.current.api.resetRowHeights();
+                      }
+                    }, 100);
+                  }}
+                  // 기본 정렬 설정
+                  defaultSortModel={[
+                    { colId: "end", sort: "desc" }, // 종료일 기준 내림차순 (늦을수록 위로, 없으면 최상단)
+                    { colId: "start", sort: "desc" }, // 시작일 기준 내림차순 (늦을수록 위로)
+                    { colId: "category", sort: "asc" }, // 카테고리 기준 오름차순
+                  ]}
+                />
+              </div>
+            )}
           </Collapse.Panel>
         </Collapse>
       </Modal>
@@ -785,6 +925,11 @@ console.log("Hello World");
         title={
           <div className="text-base font-semibold text-blue-500 flex items-center gap-2">
             📋 {selectedRow?.issue || "이슈 상세 정보 편집"}
+            {projectId && (
+              <span className="text-xs text-gray-500 ml-2">
+                (프로젝트 {projectId})
+              </span>
+            )}
           </div>
         }
         placement="right"
@@ -925,11 +1070,6 @@ console.log("Hello World");
 ### 리스트
 - [ ] 체크리스트
 - [x] 완료된 항목
-
-### 코드
-\`\`\`javascript
-console.log("Hello World");
-\`\`\`
 
 ### 링크
 [링크 텍스트](https://example.com)
