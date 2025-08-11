@@ -24,9 +24,11 @@ import { ClientSideRowModelModule } from "ag-grid-community";
 import dayjs from "dayjs";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
+import "@uiw/react-md-editor/markdown-editor.css";
 import { useIssues, useAddIssue, useUpdateIssue } from "../hooks/useIssues";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import MDEditor from "@uiw/react-md-editor";
 import TurndownService from "turndown";
 import {
@@ -286,7 +288,7 @@ console.log("Hello World");
 - **담당자**: 
 - **카테고리**: 
 
-## 📎 첨부파일
+## �� 첨부파일
 업로드된 파일과 이미지가 여기에 표시됩니다.
 
 ## 📝 참고사항
@@ -441,6 +443,7 @@ console.log("Hello World");
             <div className="markdown-preview w-full max-h-full break-words overflow-y-auto leading-relaxed text-sm prose prose-sm max-w-none">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
                 components={{
                   // 헤더 크기 제한
                   h1: ({ node, ...props }) => (
@@ -475,6 +478,10 @@ console.log("Hello World");
                   // 링크 스타일링
                   a: ({ node, ...props }) => (
                     <a className="text-blue-500 hover:underline" {...props} />
+                  ),
+                  // 단락 스타일링 - 줄바꿈 처리 개선
+                  p: ({ node, ...props }) => (
+                    <p className="mb-1 whitespace-pre-wrap" {...props} />
                   ),
                 }}
               >
