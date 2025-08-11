@@ -13,7 +13,7 @@ import {
   useIssuesByProject,
   useAddIssue,
   useUpdateIssue,
-} from "../hooks/useIssues";
+} from "../../hooks/useIssues";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -22,28 +22,22 @@ import rehypeRaw from "rehype-raw";
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
 const IssueModal = ({ isVisible, onClose, data }) => {
-  // 데이터 유효성 검사
   if (!data || !data.projectId) {
     console.warn("IssueModal - 유효하지 않은 데이터:", data);
     return null;
   }
 
-  // React Query hooks
-  // 프로젝트별 이슈 조회
   const projectId = useMemo(() => {
     if (!data || !data.projectId) return null;
     return data.projectId;
   }, [data]);
 
-  // 프로젝트별 이슈 조회
   const {
     data: projectIssues = [],
     isLoading: projectLoading,
     refetch: refetchProject,
-    error: projectError,
   } = useIssuesByProject(projectId);
 
-  // 이슈 데이터와 로딩 상태
   const issues = projectIssues;
   const isLoading = projectLoading;
   const refetch = refetchProject;
@@ -55,12 +49,10 @@ const IssueModal = ({ isVisible, onClose, data }) => {
   const [selectedRow, setSelectedRow] = useState(null);
   const gridRef = useRef(null);
 
-  // 모달이 닫힐 때 onClose 호출
   const handleCancel = () => {
     if (onClose) onClose();
   };
 
-  // 드로워에서 데이터 저장 함수
   const handleSaveDrawerData = (issueId, updatedData) => {
     updateIssueMutation.mutate(
       { id: issueId, data: updatedData },
@@ -68,8 +60,6 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         onSuccess: () => {
           message.success("변경사항이 저장되었습니다!");
           setIsDrawerVisible(false);
-
-          // 목록 새로고침
           refetch();
         },
         onError: () => {
@@ -79,23 +69,19 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     );
   };
 
-  // 날짜 기준으로 정렬된 데이터 생성 (마지막 날짜가 맨 위로)
   const sortedIssues = useMemo(() => {
     return [...issues].sort((a, b) => {
-      // end 날짜가 없으면 start 날짜로 비교
       const dateA = a.end || a.start;
       const dateB = b.end || b.start;
 
       if (!dateA && !dateB) return 0;
-      if (!dateA) return 1; // dateA가 없으면 뒤로
-      if (!dateB) return -1; // dateB가 없으면 뒤로
+      if (!dateA) return 1;
+      if (!dateB) return -1;
 
-      // 날짜 문자열을 Date 객체로 변환하여 비교 (내림차순)
       return new Date(dateB) - new Date(dateA);
     });
   }, [issues]);
 
-  // issues 데이터가 변경될 때 AG Grid 행 높이 재계산
   useEffect(() => {
     if (gridRef.current && gridRef.current.api && issues.length > 0) {
       setTimeout(() => {
@@ -103,20 +89,18 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         gridRef.current.api.refreshCells();
       }, 100);
     }
-  }, [issues.length]); // issues.length로 변경하여 배열 길이만 감지
+  }, [issues.length]);
 
   const addNewIssue = () => {
-    // projectId는 이미 유효성 검사를 통과했으므로 추가 체크 불필요
-
     const today = dayjs().format("YYYY-MM-DD");
-    const nextWeek = dayjs().add(7, "day").format("YYYY-MM-DD"); // 오늘부터 7일 후
+    const nextWeek = dayjs().add(7, "day").format("YYYY-MM-DD");
 
     const newIssue = {
       issue: "새 이슈",
       summary: "",
       status: "pending",
-      img: "", // 이미지 없음으로 시작
-      projectId: projectId, // 프로젝트 ID
+      img: "",
+      projectId: projectId,
       detail: `# 새 이슈
 
 ## 📋 요약
@@ -154,17 +138,14 @@ const IssueModal = ({ isVisible, onClose, data }) => {
     addIssueMutation.mutate(newIssue, {
       onSuccess: (data) => {
         message.success("새 이슈가 추가되었습니다!");
-
-        // 목록 새로고침
         refetch();
 
-        // 새로 추가된 이슈를 선택하고 드로워 열기
         setTimeout(() => {
           setSelectedRow(data);
           setIsDrawerVisible(true);
         }, 100);
       },
-      onError: (error) => {
+      onError: () => {
         message.error("이슈 추가에 실패했습니다!");
       },
     });

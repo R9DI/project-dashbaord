@@ -35,13 +35,16 @@ React 기반의 프로젝트 이슈 관리 및 성능 추적 대시보드 시스
 
 ```
 src/
-├── components/          # React 컴포넌트
-│   ├── Dashboard.jsx    # 메인 대시보드
-│   ├── IssueModal.jsx   # 이슈 관리 모달
-│   ├── ColorSettingsModal.jsx  # 색상 설정 모달
-│   ├── DrawerContent.jsx       # 이슈 상세 편집 드로워
-│   ├── GanttChart.jsx          # 간트 차트 컴포넌트
-│   └── GanttLegend.jsx         # 간트 차트 범례
+├── components/          # React 컴포넌트 통합 관리
+│   ├── index.jsx       # 컴포넌트 통합 export
+│   ├── Dashboard/       # 대시보드 관련 컴포넌트 그룹
+│   │   ├── index.jsx   # 메인 대시보드 컴포넌트
+│   │   └── ColorSettingsModal.jsx  # 색상 설정 모달
+│   └── IssueModal/     # 이슈 관리 관련 컴포넌트 그룹
+│       ├── index.jsx   # 이슈 관리 모달
+│       ├── IssueDrawer.jsx       # 이슈 상세 편집 드로워
+│       ├── GanttChart.jsx        # 간트 차트 컴포넌트
+│       └── GanttLegend.jsx       # 간트 차트 범례
 ├── hooks/              # Custom React Hooks
 │   ├── useProjects.jsx # 프로젝트 관련 React Query hooks
 │   └── useIssues.jsx   # 이슈 관련 React Query hooks

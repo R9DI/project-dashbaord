@@ -1,7 +1,6 @@
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import IssueModal from "./components/IssueModal.jsx";
-import Dashboard from "./components/Dashboard.jsx";
+import { Dashboard, IssueModal } from "./components";
 
 // React Query 클라이언트 생성
 const queryClient = new QueryClient({
@@ -19,7 +18,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <div className="text-center min-h-screen bg-gray-100">
         <header className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white py-10 px-5 mb-5 shadow-lg">
-          <h1 className="m-0 mb-2.5 text-4xl font-semibold md:text-5xl">
+          <h1 className="m-0 mb-2.5 text-4xl font-semibold md:text-xl">
             Project Issue Management System
           </h1>
           <p className="m-0 text-lg opacity-90 md:text-xl">
