@@ -34,6 +34,7 @@ const ColorSettingsModal = ({
 
   const handleOk = () => {
     form.validateFields().then((values) => {
+      console.log("ColorSettingsModal - Form values:", values);
       onSave(values);
     });
   };
@@ -63,239 +64,46 @@ const ColorSettingsModal = ({
             </div>
           </div>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="1st 경계"
-                name={["inlinePassRate", "high"]}
-                rules={[
-                  { required: true, message: "높은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="높은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="2nd 경계"
-                name={["inlinePassRate", "low"]}
-                rules={[
-                  { required: true, message: "낮은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="낮은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="1st 경계"
-                name={["elecPassRate", "high"]}
-                rules={[
-                  { required: true, message: "높은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="높은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="2nd 경계"
-                name={["elecPassRate", "low"]}
-                rules={[
-                  { required: true, message: "낮은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="낮은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="1st 경계"
-                name={["issueResponseIndex", "high"]}
-                rules={[
-                  { required: true, message: "높은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="높은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label="2nd 경계"
-                name={["issueResponseIndex", "low"]}
-                rules={[
-                  { required: true, message: "낮은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="낮은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label="1st 경계"
-                name={["wipAchievementRate", "high"]}
-                rules={[
-                  { required: true, message: "높은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="높은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label=" "
-                name={["wipAchievementRate", "low"]}
-                rules={[
-                  { required: true, message: "낮은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="낮은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label={colorSettingsDescription.deadlineAchievementRate}
-                name={["deadlineAchievementRate", "high"]}
-                rules={[
-                  { required: true, message: "높은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="높은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label=" "
-                name={["deadlineAchievementRate", "low"]}
-                rules={[
-                  { required: true, message: "낮은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="낮은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                label={colorSettingsDescription.finalScore}
-                name={["finalScore", "high"]}
-                rules={[
-                  { required: true, message: "높은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="높은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                label=" "
-                name={["finalScore", "low"]}
-                rules={[
-                  { required: true, message: "낮은 기준값을 입력하세요" },
-                ]}
-              >
-                <InputNumber
-                  placeholder="낮은 기준값"
-                  min={0}
-                  max={100}
-                  step={1}
-                  className="w-full"
-                  addonAfter="%"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
+          {Object.entries(colorSettingsDescription).map(([field, label]) => (
+            <Row key={field} gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label={`${label} - 높은 기준`}
+                  name={[field, "high"]}
+                  rules={[
+                    { required: true, message: "높은 기준값을 입력하세요" },
+                  ]}
+                >
+                  <InputNumber
+                    placeholder="높은 기준값"
+                    min={0}
+                    max={100}
+                    step={1}
+                    className="w-full"
+                    addonAfter="%"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label={`${label} - 낮은 기준`}
+                  name={[field, "low"]}
+                  rules={[
+                    { required: true, message: "낮은 기준값을 입력하세요" },
+                  ]}
+                >
+                  <InputNumber
+                    placeholder="낮은 기준값"
+                    min={0}
+                    max={100}
+                    step={1}
+                    className="w-full"
+                    addonAfter="%"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          ))}
         </Form>
       </Modal>
     </>

@@ -1,7 +1,12 @@
 import React, { useState, useRef, useMemo, useEffect } from "react";
 import { AgGridReact } from "ag-grid-react";
 import { ModuleRegistry } from "ag-grid-community";
-import { ClientSideRowModelModule } from "ag-grid-community";
+import {
+  ClientSideRowModelModule,
+  CellStyleModule,
+  ValidationModule,
+} from "ag-grid-community";
+
 import { Card, Button, Space, Typography, message } from "antd";
 import {
   BarChartOutlined,
@@ -18,7 +23,11 @@ import IssueModal from "../IssueModal";
 import ColorSettingsModal from "./ColorSettingsModal";
 
 // Register the required feature modules with the Grid
-ModuleRegistry.registerModules([ClientSideRowModelModule]);
+ModuleRegistry.registerModules([
+  ClientSideRowModelModule,
+  CellStyleModule,
+  ValidationModule,
+]);
 
 const { Text } = Typography;
 
@@ -49,6 +58,11 @@ const Dashboard = () => {
     }
   }, [isIssueModalVisible, selectedRowData, setSelectedRowData]);
 
+  // colorSettings 변경 시 디버깅
+  useEffect(() => {
+    console.log("Dashboard: colorSettings changed:", colorSettings);
+  }, [colorSettings]);
+
   // 빈 행 생성
   const generateEmptyRow = () => {
     const newId = Math.max(...(rowData.map((p) => p.id) || [0])) + 1;
@@ -70,8 +84,22 @@ const Dashboard = () => {
   const getCellClass = (params) => {
     const field = params.column.colId;
     const value = params.value;
-    const settings = colorSettings[field];
-    return getColorClass(field, value, settings);
+
+    console.log(
+      `getCellClass called for field: ${field}, value: ${value}, colorSettings:`,
+      colorSettings
+    );
+
+    // 과제명 컬럼은 특별 처리
+    if (field === "projectName") {
+      console.log(`Returning project-name-cell for ${field}`);
+      return "project-name-cell";
+    }
+
+    // 다른 컬럼들은 색상 기준에 따라 처리
+    const result = getColorClass(field, value, colorSettings);
+    console.log(`getCellClass result for ${field}: ${result}`);
+    return result;
   };
 
   // 컬럼 정의
@@ -82,9 +110,13 @@ const Dashboard = () => {
         field: "projectName",
         pinned: "left",
         width: 200,
-        cellStyle: {
-          fontWeight: "bold",
-          backgroundColor: "#f8f9fa",
+        cellRenderer: (params) => {
+          console.log("과제명 컬럼 cellRenderer 호출됨:", params);
+          return params.value;
+        },
+        cellClass: (params) => {
+          console.log("과제명 컬럼 cellClass 함수 호출됨:", params);
+          return "project-name-cell";
         },
       },
       {
@@ -92,14 +124,55 @@ const Dashboard = () => {
         field: "inlinePassRate",
         width: 160,
         cellRenderer: (params) => `${Math.round(params.value * 100)}%`,
-        cellClass: getCellClass,
+        cellStyle: (params) => {
+          console.log("Inline 합격률 cellStyle 호출됨:", params);
+          const field = params.column.colId;
+          const value = params.value;
+
+          if (field === "inlinePassRate") {
+            const settings = colorSettings[field];
+            if (settings) {
+              const highThreshold = settings.high / 100;
+              const lowThreshold = settings.low / 100;
+
+              if (value >= highThreshold) {
+                return { backgroundColor: "#e8f5e8" };
+              } else if (value >= lowThreshold) {
+                return { backgroundColor: "#fff3e0" };
+              } else {
+                return { backgroundColor: "#ffebee" };
+              }
+            }
+          }
+          return {};
+        },
       },
       {
         headerName: "Elec 합격률 (%)",
         field: "elecPassRate",
         width: 160,
         cellRenderer: (params) => `${Math.round(params.value * 100)}%`,
-        cellClass: getCellClass,
+        cellStyle: (params) => {
+          const field = params.column.colId;
+          const value = params.value;
+
+          if (field === "elecPassRate") {
+            const settings = colorSettings[field];
+            if (settings) {
+              const highThreshold = settings.high / 100;
+              const lowThreshold = settings.low / 100;
+
+              if (value >= highThreshold) {
+                return { backgroundColor: "#e8f5e8" };
+              } else if (value >= lowThreshold) {
+                return { backgroundColor: "#fff3e0" };
+              } else {
+                return { backgroundColor: "#ffebee" };
+              }
+            }
+          }
+          return {};
+        },
       },
       {
         headerName: "Issue 대응지수 (%)",
@@ -133,28 +206,28 @@ const Dashboard = () => {
             </div>
           );
         },
-        cellClass: getCellClass,
+        cellClass: (params) => getCellClass(params),
       },
       {
         headerName: "WIP 실적 달성률 (%)",
         field: "wipAchievementRate",
         width: 190,
         cellRenderer: (params) => `${Math.round(params.value * 100)}%`,
-        cellClass: getCellClass,
+        cellClass: (params) => getCellClass(params),
       },
       {
         headerName: "과제 납기달성률 (%)",
         field: "deadlineAchievementRate",
         width: 190,
         cellRenderer: (params) => `${Math.round(params.value * 100)}%`,
-        cellClass: getCellClass,
+        cellClass: (params) => getCellClass(params),
       },
       {
         headerName: "Final Score",
         field: "finalScore",
         width: 150,
         cellRenderer: (params) => `${Math.round(params.value * 100)}%`,
-        cellClass: getCellClass,
+        cellClass: (params) => getCellClass(params),
       },
       {
         headerName: "Remark",
@@ -168,8 +241,10 @@ const Dashboard = () => {
 
   // 설정 저장
   const handleSettingsSave = (values) => {
+    console.log("Dashboard: Saving color settings:", values);
     setColorSettings(values);
     closeColorSettingsModal();
+    message.success("색상 기준이 저장되었습니다!");
   };
 
   // 새 데이터 추가
@@ -280,7 +355,12 @@ const Dashboard = () => {
         {/* Ag-Grid */}
         <div className="ag-theme-alpine h-[500px] w-full border border-gray-200 rounded-lg">
           <AgGridReact
-            modules={[ClientSideRowModelModule]}
+            key={JSON.stringify(colorSettings)} // colorSettings가 변경될 때 그리드 리렌더링
+            modules={[
+              ClientSideRowModelModule,
+              CellStyleModule,
+              ValidationModule,
+            ]}
             columnDefs={columnDefs}
             rowData={rowData}
             pagination={true}

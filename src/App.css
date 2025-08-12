@@ -97,15 +97,49 @@
 }
 
 /* AG Grid Cell Classes */
+.project-name-cell {
+  font-weight: bold !important;
+  background-color: #f8f9fa !important;
+}
+
 .cell-high {
   background-color: #e8f5e8 !important;
+  color: #000 !important;
 }
 
 .cell-medium {
   background-color: #fff3e0 !important;
+  color: #000 !important;
 }
 
 .cell-low {
+  background-color: #ffebee !important;
+  color: #000 !important;
+}
+
+/* AG Grid 셀에 직접 적용 */
+.ag-cell.cell-high {
+  background-color: #e8f5e8 !important;
+}
+
+.ag-cell.cell-medium {
+  background-color: #fff3e0 !important;
+}
+
+.ag-cell.cell-low {
+  background-color: #ffebee !important;
+}
+
+/* 더 강력한 선택자 */
+.ag-theme-alpine .ag-cell.cell-high {
+  background-color: #e8f5e8 !important;
+}
+
+.ag-theme-alpine .ag-cell.cell-medium {
+  background-color: #fff3e0 !important;
+}
+
+.ag-theme-alpine .ag-cell.cell-low {
   background-color: #ffebee !important;
 }
 
