@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 
 const API_BASE_URL = "http://localhost:5000/api";
 
@@ -7,11 +8,8 @@ export const useProjects = () => {
   return useQuery({
     queryKey: ["projects"],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/projects`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch projects");
-      }
-      return await response.json();
+      const response = await axios.get(`${API_BASE_URL}/projects`);
+      return response.data;
     },
     staleTime: 5 * 60 * 1000, // 5분
   });
@@ -22,17 +20,8 @@ export const useUpdateProject = () => {
 
   return useMutation({
     mutationFn: async ({ id, data }) => {
-      const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to update project");
-      }
-      return await response.json();
+      const response = await axios.put(`${API_BASE_URL}/projects/${id}`, data);
+      return response.data;
     },
     onSuccess: (updatedProject) => {
       // 프로젝트 목록 캐시 업데이트
@@ -53,13 +42,8 @@ export const useDeleteProject = () => {
 
   return useMutation({
     mutationFn: async (id) => {
-      const response = await fetch(`${API_BASE_URL}/projects/${id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to delete project");
-      }
-      return await response.json();
+      const response = await axios.delete(`${API_BASE_URL}/projects/${id}`);
+      return response.data;
     },
     onSuccess: (_, deletedId) => {
       // 프로젝트 목록 캐시에서 삭제된 프로젝트 제거
@@ -78,13 +62,10 @@ export const useIssuesByProject = (projectId) => {
   return useQuery({
     queryKey: ["issues", "project", projectId],
     queryFn: async () => {
-      const response = await fetch(
+      const response = await axios.get(
         `${API_BASE_URL}/projects/${projectId}/issues`
       );
-      if (!response.ok) {
-        throw new Error("Failed to fetch project issues");
-      }
-      return await response.json();
+      return response.data;
     },
     enabled: !!projectId, // projectId가 있을 때만 실행
     staleTime: 2 * 60 * 1000, // 2분
@@ -96,17 +77,8 @@ export const useCreateIssue = () => {
 
   return useMutation({
     mutationFn: async (data) => {
-      const response = await fetch(`${API_BASE_URL}/issues`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to create issue");
-      }
-      return await response.json();
+      const response = await axios.post(`${API_BASE_URL}/issues`, data);
+      return response.data;
     },
     onSuccess: (newIssue) => {
       // 프로젝트별 이슈 캐시에 추가
@@ -126,17 +98,8 @@ export const useUpdateIssue = () => {
 
   return useMutation({
     mutationFn: async ({ id, data }) => {
-      const response = await fetch(`${API_BASE_URL}/issues/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to update issue");
-      }
-      return await response.json();
+      const response = await axios.put(`${API_BASE_URL}/issues/${id}`, data);
+      return response.data;
     },
     onSuccess: (updatedIssue) => {
       // 프로젝트별 이슈 캐시 업데이트
@@ -158,11 +121,8 @@ export const useColorSettings = () => {
   return useQuery({
     queryKey: ["colorSettings"],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/color-settings`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch color settings");
-      }
-      return await response.json();
+      const response = await axios.get(`${API_BASE_URL}/color-settings`);
+      return response.data;
     },
     staleTime: 10 * 60 * 1000, // 10분
   });
@@ -173,17 +133,11 @@ export const useUpdateColorSettings = () => {
 
   return useMutation({
     mutationFn: async (settings) => {
-      const response = await fetch(`${API_BASE_URL}/color-settings`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(settings),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to update color settings");
-      }
-      return await response.json();
+      const response = await axios.put(
+        `${API_BASE_URL}/color-settings`,
+        settings
+      );
+      return response.data;
     },
     onSuccess: (updatedSettings) => {
       // 색상 설정 캐시 업데이트
@@ -197,11 +151,8 @@ export const useStatistics = () => {
   return useQuery({
     queryKey: ["statistics"],
     queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/statistics`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch statistics");
-      }
-      return await response.json();
+      const response = await axios.get(`${API_BASE_URL}/statistics`);
+      return response.data;
     },
     staleTime: 5 * 60 * 1000, // 5분
   });
