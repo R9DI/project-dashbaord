@@ -11,9 +11,10 @@ import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import {
   useIssuesByProject,
-  useAddIssue,
+  useCreateIssue,
   useUpdateIssue,
 } from "../../hooks/useIssues";
+import { useModalStore } from "../../stores/modalStore";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -21,16 +22,19 @@ import rehypeRaw from "rehype-raw";
 // Register the required feature modules with the Grid
 ModuleRegistry.registerModules([ClientSideRowModelModule]);
 
-const IssueModal = ({ isVisible, onClose, data }) => {
-  if (!data || !data.projectId) {
-    console.warn("IssueModal - 유효하지 않은 데이터:", data);
+const IssueModal = () => {
+  const { isIssueModalVisible, selectedRowData, closeIssueModal } =
+    useModalStore();
+
+  if (!selectedRowData || !selectedRowData.projectId) {
+    console.warn("IssueModal - 유효하지 않은 데이터:", selectedRowData);
     return null;
   }
 
   const projectId = useMemo(() => {
-    if (!data || !data.projectId) return null;
-    return data.projectId;
-  }, [data]);
+    if (!selectedRowData || !selectedRowData.projectId) return null;
+    return selectedRowData.projectId;
+  }, [selectedRowData]);
 
   const {
     data: projectIssues = [],
@@ -42,27 +46,49 @@ const IssueModal = ({ isVisible, onClose, data }) => {
   const isLoading = projectLoading;
   const refetch = refetchProject;
 
-  const addIssueMutation = useAddIssue();
-  const updateIssueMutation = useUpdateIssue();
+  const createIssueMutation = useCreateIssue(projectId);
+  const updateIssueMutation = useUpdateIssue(projectId);
 
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
   const gridRef = useRef(null);
 
   const handleCancel = () => {
-    if (onClose) onClose();
+    closeIssueModal();
   };
 
   const handleSaveDrawerData = (issueId, updatedData) => {
+    if (!issueId) {
+      message.error("이슈 ID가 없습니다!");
+      return;
+    }
+
+    if (!projectId) {
+      message.error("프로젝트 ID가 없습니다!");
+      return;
+    }
+
+    // 업데이트할 데이터에 필수 필드 추가
+    const dataToUpdate = {
+      ...updatedData,
+      updatedAt: dayjs().format("YYYY-MM-DD HH:mm:ss"),
+    };
+
     updateIssueMutation.mutate(
-      { id: issueId, data: updatedData },
+      { id: issueId, data: dataToUpdate },
       {
-        onSuccess: () => {
+        onSuccess: (updatedIssue) => {
           message.success("변경사항이 저장되었습니다!");
           setIsDrawerVisible(false);
-          refetch();
+
+          // 선택된 행을 업데이트된 데이터로 갱신
+          setSelectedRow(updatedIssue);
+
+          // 캐시는 React Query가 자동으로 업데이트하므로 refetch 불필요
+          // refetch();
         },
-        onError: () => {
+        onError: (error) => {
+          console.error("이슈 업데이트 실패:", error);
           message.error("저장에 실패했습니다!");
         },
       }
@@ -100,7 +126,6 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       summary: "",
       status: "pending",
       img: "",
-      projectId: projectId,
       detail: `# 새 이슈
 
 ## 📋 요약
@@ -135,7 +160,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
       progress: "계획 단계",
     };
 
-    addIssueMutation.mutate(newIssue, {
+    createIssueMutation.mutate(newIssue, {
       onSuccess: (data) => {
         message.success("새 이슈가 추가되었습니다!");
         refetch();
@@ -406,14 +431,14 @@ const IssueModal = ({ isVisible, onClose, data }) => {
         title={
           <div className="text-lg font-semibold text-blue-500 flex items-center gap-2">
             📊{" "}
-            {data && data.projectName
-              ? `${data.projectName} - 이슈 관리`
+            {selectedRowData && selectedRowData.projectName
+              ? `${selectedRowData.projectName} - 이슈 관리`
               : projectId
               ? `프로젝트 ${projectId} - 이슈 관리`
               : "이슈 관리"}
           </div>
         }
-        open={isVisible}
+        open={isIssueModalVisible}
         onCancel={handleCancel}
         width="90vw"
         className="top-2.5 rounded-xl max-h-[90vh]"
@@ -475,7 +500,7 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                   icon={<span>➕</span>}
                   size="small"
                   className="flex items-center gap-1 font-semibold rounded-md shadow-md"
-                  loading={addIssueMutation.isPending}
+                  loading={createIssueMutation.isPending}
                   disabled={!projectId}
                   title={
                     !projectId
@@ -507,14 +532,14 @@ const IssueModal = ({ isVisible, onClose, data }) => {
                   <div className="text-gray-500 mb-4">
                     이슈를 보려면 먼저 프로젝트를 선택해야 합니다.
                   </div>
-                  <div className="text-sm text-gray-400 mb-2">
-                    전달된 데이터: {JSON.stringify(data, null, 2)}
-                  </div>
                   <div className="text-xs text-gray-400">
-                    projectId: {projectId || "N/A"}, data.id:{" "}
-                    {data?.id || "N/A"}
+                    projectId: {projectId || "N/A"}
                   </div>
-                  <Button type="primary" onClick={onClose} className="mt-4">
+                  <Button
+                    type="primary"
+                    onClick={closeIssueModal}
+                    className="mt-4"
+                  >
                     모달 닫기
                   </Button>
                 </div>

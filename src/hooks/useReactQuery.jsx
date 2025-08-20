@@ -60,7 +60,7 @@ export const useDeleteProject = () => {
 // 이슈 관련 hooks
 export const useIssuesByProject = (projectId) => {
   return useQuery({
-    queryKey: ["issues", "project", projectId],
+    queryKey: ["issues", projectId],
     queryFn: async () => {
       const response = await axios.get(
         `${API_BASE_URL}/projects/${projectId}/issues`
@@ -72,46 +72,47 @@ export const useIssuesByProject = (projectId) => {
   });
 };
 
-export const useCreateIssue = () => {
+export const useCreateIssue = (projectId) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data) => {
-      const response = await axios.post(`${API_BASE_URL}/issues`, data);
+      // projectId를 data에 추가
+      const issueData = { ...data, projectId };
+      const response = await axios.post(`${API_BASE_URL}/issues`, issueData);
       return response.data;
     },
     onSuccess: (newIssue) => {
       // 프로젝트별 이슈 캐시에 추가
-      queryClient.setQueryData(
-        ["issues", "project", newIssue.projectId],
-        (oldData) => {
-          if (!oldData) return [newIssue];
-          return [...oldData, newIssue];
-        }
-      );
+      queryClient.setQueryData(["issues", projectId], (oldData) => {
+        if (!oldData) return [newIssue];
+        return [...oldData, newIssue];
+      });
     },
   });
 };
 
-export const useUpdateIssue = () => {
+export const useUpdateIssue = (projectId) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ id, data }) => {
-      const response = await axios.put(`${API_BASE_URL}/issues/${id}`, data);
+      // projectId를 data에 추가
+      const issueData = { ...data, projectId };
+      const response = await axios.put(
+        `${API_BASE_URL}/issues/${id}`,
+        issueData
+      );
       return response.data;
     },
     onSuccess: (updatedIssue) => {
       // 프로젝트별 이슈 캐시 업데이트
-      queryClient.setQueryData(
-        ["issues", "project", updatedIssue.projectId],
-        (oldData) => {
-          if (!oldData) return [updatedIssue];
-          return oldData.map((issue) =>
-            issue.id === updatedIssue.id ? updatedIssue : issue
-          );
-        }
-      );
+      queryClient.setQueryData(["issues", projectId], (oldData) => {
+        if (!oldData) return [updatedIssue];
+        return oldData.map((issue) =>
+          issue.id === updatedIssue.id ? updatedIssue : issue
+        );
+      });
     },
   });
 };

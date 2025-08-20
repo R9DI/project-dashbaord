@@ -4,3 +4,6 @@ export {
   useCreateIssue,
   useUpdateIssue,
 } from "./useReactQuery";
+
+// 별칭 추가
+export const useAddIssue = useCreateIssue;

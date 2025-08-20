@@ -375,13 +375,7 @@ const Dashboard = () => {
       </Card>
 
       {/* Issue Modal */}
-      {isIssueModalVisible && selectedRowData && (
-        <IssueModal
-          isVisible={isIssueModalVisible}
-          onClose={closeIssueModal}
-          data={selectedRowData}
-        />
-      )}
+      {isIssueModalVisible && selectedRowData && <IssueModal />}
 
       {/* Color Settings Modal */}
       <ColorSettingsModal

@@ -1,6 +1,6 @@
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Dashboard, IssueModal } from "./components";
+import { Dashboard } from "./components";
 
 // React Query 클라이언트 생성
 const queryClient = new QueryClient({
@@ -28,9 +28,6 @@ function App() {
 
         <main className="max-w-6xl mx-auto px-5 md:px-20">
           <Dashboard />
-          <div className="mt-5 text-center">
-            <IssueModal />
-          </div>
         </main>
       </div>
     </QueryClientProvider>

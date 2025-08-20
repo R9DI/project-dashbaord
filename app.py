@@ -75,7 +75,7 @@ def create_issue():
     
     # 새 이슈 생성 (프론트엔드 형식 그대로)
     new_issue = {
-        "id": project_id,
+        "id": str(ObjectId()),  # 고유한 이슈 ID 생성
         "issue": data['issue'],
         "summary": data.get('summary', ''),
         "status": data.get('status', 'pending'),
@@ -85,6 +85,7 @@ def create_issue():
         "end": data.get('end', ''),
         "file": data.get('file', ''),
         "progress": data.get('progress', ''),
+        "projectId": project_id,  # 프로젝트 ID 추가
         "createdAt": datetime.utcnow().isoformat(),
         "updatedAt": datetime.utcnow().isoformat()
     }
@@ -96,6 +97,62 @@ def create_issue():
     )
     
     return jsonify(new_issue), 201
+
+@dashboard_bp.put("/issues/<issue_id>")
+def update_issue(issue_id):
+    """이슈 업데이트"""
+    data = request.get_json()
+    
+    project_id = data.get('projectId')
+    if not project_id:
+        return jsonify({'error': 'Project ID is required'}), 400
+    
+    try:
+        project_object_id = ObjectId(project_id)
+    except:
+        return jsonify({'error': 'Invalid project ID format'}), 400
+    
+    # 프로젝트 존재 확인
+    project = db.CHECK_LIST.find_one({'_id': project_object_id})
+    if not project:
+        return jsonify({'error': 'Project not found'}), 404
+    
+    # ISSUE_LIST에서 해당 이슈 찾기
+    issue_list = project.get('ISSUE_LIST', [])
+    issue_index = None
+    
+    for i, issue in enumerate(issue_list):
+        if issue.get('id') == issue_id:
+            issue_index = i
+            break
+    
+    if issue_index is None:
+        return jsonify({'error': 'Issue not found'}), 404
+    
+    # 이슈 업데이트
+    updated_issue = {
+        "id": issue_id,
+        "issue": data.get('issue', issue_list[issue_index].get('issue', '')),
+        "summary": data.get('summary', issue_list[issue_index].get('summary', '')),
+        "status": data.get('status', issue_list[issue_index].get('status', 'pending')),
+        "img": data.get('img', issue_list[issue_index].get('img', '')),
+        "detail": data.get('detail', issue_list[issue_index].get('detail', '')),
+        "start": data.get('start', issue_list[issue_index].get('start', '')),
+        "end": data.get('end', issue_list[issue_index].get('end', '')),
+        "file": data.get('file', issue_list[issue_index].get('file', '')),
+        "progress": data.get('progress', issue_list[issue_index].get('progress', '')),
+        "projectId": project_id,
+        "createdAt": issue_list[issue_index].get('createdAt', datetime.utcnow().isoformat()),
+        "updatedAt": datetime.utcnow().isoformat()
+    }
+    
+    # ISSUE_LIST 업데이트
+    db.CHECK_LIST.update_one(
+        {'_id': project_object_id},
+        {'$set': {f'ISSUE_LIST.{issue_index}': updated_issue}}
+    )
+    
+    return jsonify(updated_issue)
 
 @dashboard_bp.get("/projects/<project_id>/issues")
 def get_project_issues(project_id):
