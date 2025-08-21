@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Modal, Button, message, Collapse, Image } from "antd";
 import GanttChart from "./GanttChart.jsx";
 import GanttLegend from "./GanttLegend.jsx";
@@ -53,11 +53,11 @@ const IssueModal = () => {
   const [selectedRow, setSelectedRow] = useState(null);
   const gridRef = useRef(null);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     closeIssueModal();
-  };
+  }, [closeIssueModal]);
 
-  const handleSaveDrawerData = (issueId, updatedData) => {
+  const handleSaveDrawerData = useCallback((issueId, updatedData) => {
     if (!issueId) {
       message.error("이슈 ID가 없습니다!");
       return;
@@ -93,7 +93,7 @@ const IssueModal = () => {
         },
       }
     );
-  };
+  }, [projectId, updateIssueMutation, setIsDrawerVisible, setSelectedRow]);
 
   const sortedIssues = useMemo(() => {
     return [...issues].sort((a, b) => {
@@ -117,7 +117,7 @@ const IssueModal = () => {
     }
   }, [issues.length]);
 
-  const addNewIssue = () => {
+  const addNewIssue = useCallback(() => {
     const today = dayjs().format("YYYY-MM-DD");
     const nextWeek = dayjs().add(7, "day").format("YYYY-MM-DD");
 
@@ -163,7 +163,7 @@ const IssueModal = () => {
     createIssueMutation.mutate(newIssue, {
       onSuccess: (data) => {
         message.success("새 이슈가 추가되었습니다!");
-        refetch();
+        // refetch() 제거 - useCreateIssue에서 이미 캐시를 업데이트함
 
         setTimeout(() => {
           setSelectedRow(data);
@@ -174,7 +174,7 @@ const IssueModal = () => {
         message.error("이슈 추가에 실패했습니다!");
       },
     });
-  };
+  }, [createIssueMutation, setSelectedRow, setIsDrawerVisible]);
 
   const columnDefs = [
     {
@@ -420,10 +420,15 @@ const IssueModal = () => {
   ];
 
   // Ag-Grid 이벤트 핸들러
-  const onRowClicked = (params) => {
+  const onRowClicked = useCallback((params) => {
     setSelectedRow(params.data);
     setIsDrawerVisible(true);
-  };
+  }, [setSelectedRow, setIsDrawerVisible]);
+
+  // 드로워 닫기 핸들러
+  const handleCloseDrawer = useCallback(() => {
+    setIsDrawerVisible(false);
+  }, [setIsDrawerVisible]);
 
   return (
     <>
@@ -682,7 +687,7 @@ const IssueModal = () => {
       {/* IssueDrawer 컴포넌트 사용 */}
       <IssueDrawer
         isVisible={isDrawerVisible}
-        onClose={() => setIsDrawerVisible(false)}
+        onClose={handleCloseDrawer}
         selectedRow={selectedRow}
         projectId={projectId}
         onSave={handleSaveDrawerData}
