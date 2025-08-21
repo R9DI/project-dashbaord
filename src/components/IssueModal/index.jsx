@@ -163,7 +163,7 @@ const IssueModal = () => {
     createIssueMutation.mutate(newIssue, {
       onSuccess: (data) => {
         message.success("새 이슈가 추가되었습니다!");
-        refetch();
+        // refetch() 제거 - useCreateIssue에서 이미 캐시를 업데이트함
 
         setTimeout(() => {
           setSelectedRow(data);
@@ -174,7 +174,7 @@ const IssueModal = () => {
         message.error("이슈 추가에 실패했습니다!");
       },
     });
-  }, [createIssueMutation, refetch, setSelectedRow, setIsDrawerVisible]);
+  }, [createIssueMutation, setSelectedRow, setIsDrawerVisible]);
 
   const columnDefs = [
     {
